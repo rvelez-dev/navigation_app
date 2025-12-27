@@ -37,7 +37,7 @@ class _ModifyLocationState extends State<ModifyLocation> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Navigation App"),
+        title: const Text("Navigation "),
         flexibleSpace: Container( //changes the top header
           color: Colors.redAccent
         ),
