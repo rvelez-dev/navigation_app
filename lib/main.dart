@@ -3,6 +3,9 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'map_view.dart'; //map view for app
 import 'getLocation/modify_location.dart';
+//new imports for geojsons
+import 'package:turf/turf.dart' as turf;
+import 'package:dijkstra/dijkstra.dart';
 
 void main() {
   runApp(const MyApp());
