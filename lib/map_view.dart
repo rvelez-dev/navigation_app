@@ -29,6 +29,9 @@ class _MapViewState extends State<MapView> {
   List<LatLng> _routePolyline = [];
   bool _isGraphLoaded = false;
 
+  bool _useCurrentLocation = false;
+  LatLng? _currentUserLocation;
+
   //location package
   final Location _location = Location();
 
@@ -52,18 +55,20 @@ class _MapViewState extends State<MapView> {
       debugPrint("Error loading GeoJSON: $e");
     }
   }
+
   // requesting location permission and move map to current location
   Future<void> _requestLocationPermissionAndCenter() async{
+    //check if hardware has location enabled
     bool serviceEnabled = await _location.serviceEnabled();
     if(!serviceEnabled){
       serviceEnabled = await _location.requestService();
       if(!serviceEnabled) return;
     }
-
+    //request permission to use location data
     PermissionStatus permissionGranted = await _location.hasPermission();
     if(permissionGranted == PermissionStatus.denied){
       permissionGranted = await _location.requestPermission();
-      if(permissionGranted != PermissionStatus.granted)return;
+      if(permissionGranted != PermissionStatus.granted)return; //if no permissions stop
     }
 
     //Getting current location and move map accordingly
@@ -78,6 +83,16 @@ class _MapViewState extends State<MapView> {
     //location updates and recenter if needed
     _location.onLocationChanged.listen((LocationData newLoc){
       if(newLoc.latitude != null && newLoc.longitude != null){
+        _currentUserLocation = LatLng(newLoc.latitude!, newLoc.longitude!);
+        if(_useCurrentLocation){
+          setState(() {
+            _startPoint = _currentUserLocation;
+            // If they already picked a destination, update the route live as they walk
+            if (_endPoint != null) {
+              _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!);
+            }
+          });
+        }
         mapController.move(
           LatLng(newLoc.latitude!, newLoc.longitude!),
           mapController.camera.zoom
@@ -86,22 +101,57 @@ class _MapViewState extends State<MapView> {
     });
   }
 
+  Future<bool> _handleLocationPermission() async {
+    bool serviceEnabled = await _location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await _location.requestService();
+      if (!serviceEnabled) return false; // User refused to turn on GPS hardware
+    }
+
+    PermissionStatus permissionGranted = await _location.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await _location.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) return false; // User denied app permission
+    }
+
+    // If the user permanently denied permission, this will return false
+    if (permissionGranted == PermissionStatus.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Location permission is permanently denied. Please enable it in settings.")),
+      );
+      return false;
+    }
+
+    return true;
+  }
+
   // 3. Handle the Tap Logic
   void _onMapTap(LatLng point) {
     if (!_isGraphLoaded) return; // Don't allow taps until data is ready
+      setState(() {
+        //gps is start, tap is always the destination
+        if(_useCurrentLocation){
+          if(_currentUserLocation == null) {
+            return;
+          }
+          _startPoint = _currentUserLocation;
+          _endPoint = point;
+          _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!);
+        }else{
+          //manual start and end select mode
+          if (_startPoint == null || (_startPoint != null && _endPoint != null)) {
+            // Start fresh: set Point A and clear old route
+            _startPoint = point;
+            _endPoint = null;
+            _routePolyline = [];
+          }else{
+            // Set Point B and calculate the path
+            _endPoint = point;
+            _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!);
+          }
+        }
+      });
 
-    setState(() {
-      if (_startPoint == null || (_startPoint != null && _endPoint != null)) {
-        // Start fresh: set Point A and clear old route
-        _startPoint = point;
-        _endPoint = null;
-        _routePolyline = [];
-      } else {
-        // Set Point B and calculate the path
-        _endPoint = point;
-        _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!);
-      }
-    });
   }
 
   @override
@@ -124,6 +174,37 @@ class _MapViewState extends State<MapView> {
               )
           ],
         ),
+
+        // new toggle button for gps start
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () async {
+            // If we are trying to turn GPS mode ON, check permissions first
+            if (!_useCurrentLocation) {
+              bool hasPermission = await _handleLocationPermission();
+              if (!hasPermission) return; // Exit if they didn't allow it
+            }
+            setState(() {
+              _useCurrentLocation = !_useCurrentLocation;
+              if(_useCurrentLocation){//gps mode on
+                if(_currentUserLocation != null){
+                  _startPoint = _currentUserLocation;
+                  if(_endPoint != null) {
+                    _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!);
+                  }
+                }
+              }else {
+                // If they turned gps off clear the start point and end
+                _startPoint = null;
+                _endPoint = null;
+                _routePolyline = [];
+              }
+            });
+          },
+          label: Text(_useCurrentLocation ? "GPS Start" : "Manual Start"),
+          icon: Icon(_useCurrentLocation ? Icons.my_location : Icons.edit_location),
+          backgroundColor: _useCurrentLocation ? Colors.blue : Colors.grey,
+        ),
+
         body: FlutterMap(
                 mapController: mapController,
                 options: MapOptions(
