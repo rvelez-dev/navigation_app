@@ -12,7 +12,7 @@ class BuildingDropdown extends StatefulWidget {
   State<BuildingDropdown> createState() => _BuildingDropdownState();
 }
 
-//
+//class for dropdown menu
 class _BuildingDropdownState extends State<BuildingDropdown> {
   // Current selection
   String? _selectedBuilding;
@@ -20,7 +20,7 @@ class _BuildingDropdownState extends State<BuildingDropdown> {
   @override
   Widget build(BuildContext context) {
     return DropdownButton<String>(
-      hint: const Text("Select a building"),
+      hint: const Text("Select a building"), // placeholder text
       value: _selectedBuilding,
       items: [
         // Placeholder options

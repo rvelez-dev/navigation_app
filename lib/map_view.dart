@@ -1,6 +1,7 @@
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:latlong2/latlong.dart';
+import 'campus_dropdown.dart'; // calling dropdown class
 import 'package:flutter/material.dart';
 import 'package:location/location.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -143,6 +144,18 @@ class _MapViewState extends State<MapView> {
 
                       markerSize: Size(17, 17),
                       markerDirection: MarkerDirection.heading,
+                    ),
+                  ),
+                  // Dropdown menu
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    right: 10,
+                    child: BuildingDropdown(
+                      onSelected: (building) {
+                        print("User selected: $building");
+                        // figure out how to route selected buildings to usergit
+                      },
                     ),
                   ),
 
