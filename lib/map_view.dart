@@ -154,7 +154,7 @@ class _MapViewState extends State<MapView> {
                     child: BuildingDropdown(
                       onSelected: (building) {
                         print("User selected: $building");
-                        // figure out how to route selected buildings to usergit
+                        // figure out how to route selected buildings to user
                       },
                     ),
                   ),
