@@ -71,9 +71,20 @@ class _MapViewState extends State<MapView> {
       if(permissionGranted != PermissionStatus.granted)return; //if no permissions stop
     }
 
+    //manually setting up recurring checks on location every 1.5 seconds
+    await _location.changeSettings(
+      accuracy: LocationAccuracy.high,
+      interval: 1500, // Update every 1.5 seconds
+      distanceFilter: 0, // Even if the user hasn't moved
+    );
+
     //Getting current location and move map accordingly
     final LocationData userLocation = await _location.getLocation();
     if(userLocation.latitude !=null && userLocation.longitude != null){
+      setState(() {
+        // SAVE the location to your variable here!
+        _currentUserLocation = LatLng(userLocation.latitude!, userLocation.longitude!);
+      });
       mapController.move(
         LatLng(userLocation.latitude!, userLocation.longitude!),
         17.0, // zoom
@@ -126,32 +137,45 @@ class _MapViewState extends State<MapView> {
   }
 
   // 3. Handle the Tap Logic
-  void _onMapTap(LatLng point) {
+  Future<void> _onMapTap(LatLng point) async {
     if (!_isGraphLoaded) return; // Don't allow taps until data is ready
-      setState(() {
-        //gps is start, tap is always the destination
-        if(_useCurrentLocation){
-          if(_currentUserLocation == null) {
-            return;
-          }
-          _startPoint = _currentUserLocation;
+
+    if (_useCurrentLocation && _currentUserLocation == null) {
+      final LocationData forcedLoc = await _location.getLocation();
+      if (forcedLoc.latitude != null) {
+        setState(() {
+          _currentUserLocation = LatLng(forcedLoc.latitude!, forcedLoc.longitude!);
+        });
+      }
+    }
+
+    setState(() {
+      //gps is start, tap is always the destination
+      if(_useCurrentLocation){
+        if(_currentUserLocation == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content:  Text("GPS location not found")),
+          );
+          return;
+        }
+        //set destination to tap point
+        _startPoint = _currentUserLocation;
+        _endPoint = point;
+        _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!);
+      }else{
+        //manual start and end select mode
+        if (_startPoint == null || (_startPoint != null && _endPoint != null)) {
+          // Start fresh: set Point A and clear old route
+          _startPoint = point;
+          _endPoint = null;
+          _routePolyline = [];
+        }else{
+          // Set Point B and calculate the path
           _endPoint = point;
           _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!);
-        }else{
-          //manual start and end select mode
-          if (_startPoint == null || (_startPoint != null && _endPoint != null)) {
-            // Start fresh: set Point A and clear old route
-            _startPoint = point;
-            _endPoint = null;
-            _routePolyline = [];
-          }else{
-            // Set Point B and calculate the path
-            _endPoint = point;
-            _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!);
-          }
         }
-      });
-
+      }
+    });
   }
 
   @override
@@ -185,18 +209,16 @@ class _MapViewState extends State<MapView> {
             }
             setState(() {
               _useCurrentLocation = !_useCurrentLocation;
+
               if(_useCurrentLocation){//gps mode on
-                if(_currentUserLocation != null){
-                  _startPoint = _currentUserLocation;
+                if(_currentUserLocation != null){//if users location
+                  _startPoint = _currentUserLocation;//move start marker to there
+
+                  //if there is an existing destination change start point to user and redraw path
                   if(_endPoint != null) {
                     _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!);
                   }
-                }
-              }else {
-                // If they turned gps off clear the start point and end
-                _startPoint = null;
-                _endPoint = null;
-                _routePolyline = [];
+               }
               }
             });
           },
