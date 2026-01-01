@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 
 // StatefulWidget class for dropdown
 class BuildingDropdown extends StatefulWidget {
@@ -14,26 +15,47 @@ class BuildingDropdown extends StatefulWidget {
 
 //class for dropdown menu
 class _BuildingDropdownState extends State<BuildingDropdown> {
+  //creating arrays for different locations
+  final List<String> dorms = [
+    'Laurel Residence Hall',
+    'Shawnee Residence Hall',
+    'Minsi Residence Hall',
+    'Linden Residence Hall',
+    'Hemlock Suites',
+    'Lenape Residence Hall',
+    'Hawthorn Suites',
+    'Sycamore Suites',
+  ];
   // Current selection
-  String? _selectedBuilding;
+  String? _selectedLocation;
 
   @override
   Widget build(BuildContext context) {
     return DropdownButton<String>(
-      hint: const Text("Select a building"), // placeholder text
-      value: _selectedBuilding,
-      items: [
-        // Placeholder options
-        DropdownMenuItem(value: "Library", child: Text("Library")),
-        DropdownMenuItem(value: "Science Hall", child: Text("Science Hall")),
-      ],
+
+      hint: const Text("Where To?"),
+      value: _selectedLocation,
+      isExpanded: true,
+
+      items: dorms.map((dorm) {
+        return DropdownMenuItem<String>(
+          value: dorm,
+          child: Text(
+            dorm,
+            style: const TextStyle(fontSize: 15),
+          ),
+        );
+      }).toList(),
+
       onChanged: (value) {
+        if (value == null) return;
+
         setState(() {
-          _selectedBuilding = value;
+          _selectedLocation = value; //selectedlocation in map view
         });
 
-        // Call the callback in MapView if provided
-        if (value != null && widget.onSelected != null) {
+        // Notify MapView
+        if (widget.onSelected != null) {
           widget.onSelected!(value);
         }
       },

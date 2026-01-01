@@ -23,6 +23,19 @@ class _MapViewState extends State<MapView> {
   // marker of user
   final MapController mapController = MapController();
 
+  //Creating translation of string location to latlang coordinates
+  final Map<String,LatLng> dormLocations={
+    'Laurel Residence Hall':LatLng(40.9959155,-75.173446),
+    'Shawnee Residence Hall': LatLng(40.9963692,-75.1718578),
+    'Minsi Residence Hall': LatLng(40.9955957,-75.1712977),
+    'Linden Residence Hall': LatLng(40.9965415, -75.171232),
+    'Hemlock Suites': LatLng(40.9982059,-75.1716599),
+    'Lenape Residence Hall': LatLng(40.9984213,-75.1723409),
+    'Hawthorn Suites' : LatLng(40.9994416,-75.1733226),
+    'Sycamore Suites' : LatLng(40.9971008,-75.1717411)
+
+};
+
   // State variables to track navigation
   LatLng? _startPoint;
   LatLng? _endPoint;
@@ -87,7 +100,7 @@ class _MapViewState extends State<MapView> {
       });
       mapController.move(
         LatLng(userLocation.latitude!, userLocation.longitude!),
-        17.0, // zoom
+        16.2, // zoom
       );
       setState(() {}); // refreshes map to show currentLocationLayer
     }
@@ -177,6 +190,27 @@ class _MapViewState extends State<MapView> {
       }
     });
   }
+  // simple method to handle the users start point and route to users end point from selected option from dropdown menu
+  void _handleLocationSelection(String destination){
+    // creating variable endpoint from list of dorm building names
+    final LatLng? endpoint = dormLocations[destination];
+    _startPoint = _currentUserLocation; // re initializing _startpoint to be current user location
+
+    if(endpoint == null){
+      debugPrint('No coordinates found for $destination');
+      return;
+    }
+    if(_startPoint==null){
+      debugPrint('Start point not set yet.');
+      return;
+    }
+
+    setState(() {
+      _endPoint = endpoint; // setting the _endpoint to be the value from dormLocations list
+      _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!); // restating polyline
+    });
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -255,8 +289,8 @@ class _MapViewState extends State<MapView> {
                     left: 10,
                     right: 10,
                     child: BuildingDropdown(
-                      onSelected: (building) {
-                        print("User selected: $building");
+                      onSelected: (selectedLocation) {
+                        _handleLocationSelection(selectedLocation); // calling method to turn users selected location into latlng points
                         // figure out how to route selected buildings to user
                       },
                     ),
