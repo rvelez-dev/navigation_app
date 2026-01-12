@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:latlong2/latlong.dart';
 import 'package:dijkstra/dijkstra.dart';
-import 'package:turf/turf.dart' as turf;
 
 class RoutingService {
   // Our master graph: { "lat,lng": { "neighborLat,neighborLng": distanceInMeters } }

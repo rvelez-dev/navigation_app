@@ -1,18 +1,14 @@
-import 'dart:convert';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:latlong2/latlong.dart' as ll2;
 import 'campus_dropdown.dart'; // calling dropdown class
 import 'package:flutter/material.dart';
 import 'package:location/location.dart';
-import 'package:url_launcher/url_launcher.dart';
 //import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart' show rootBundle; // Required to load the file
 import 'routing_service.dart'; // Ensure this file exists in your lib folder
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 class MapView extends StatefulWidget {
-  const MapView({Key? key}) : super(key: key);
+  const MapView({super.key});
 
   @override
   State<MapView> createState() => _MapViewState();
@@ -359,106 +355,84 @@ class _MapViewState extends State<MapView> {
     } //else {
       //await mapController!.setGeoJsonSource("end-source", {"type": "FeatureCollection", "features": []});
     //}*/
-    // if (mapController == null) return;
-    //
-    // try {
-    //   // 1. Handle Start Point Marker
-    //   if (_startPoint != null) {
-    //     debugPrint("Debug: Updating start-source with point");
-    //     await mapController!.setGeoJsonSource("start-source", {
-    //       "type": "Feature",
-    //       "geometry": {
-    //         "type": "Point",
-    //         "coordinates": [_startPoint!.longitude, _startPoint!.latitude]
-    //       },
-    //       "properties": {}
-    //     });
-    //     await mapController!.setGeoJsonSource("start-source", jsonEncode(startGeoJson));
-    //   } else {
-    //     // Explicitly clear if null, don't remove the source
-    //     await mapController!.setGeoJsonSource("start-source", jsonEncode({"type": "FeatureCollection", "features": []}));
-    //   }
-    //
-    //   // 2. Handle End Point Marker
-    //   if (_endPoint != null) {
-    //     debugPrint("Debug: Updating end-source with point");
-    //     await mapController!.setGeoJsonSource("end-source", {
-    //       "type": "Feature",
-    //       "geometry": {
-    //         "type": "Point",
-    //         "coordinates": [_endPoint!.longitude, _endPoint!.latitude]
-    //       },
-    //       "properties": {}
-    //     });
-    //     await mapController!.setGeoJsonSource("end-source", jsonEncode(endGeoJson));
-    //   } else {
-    //     await mapController!.setGeoJsonSource("end-source", jsonEncode({"type": "FeatureCollection", "features": []}));
-    //   }
-    // } catch (e) {
-    //   debugPrint("MapLibre Error in _drawMarkers: $e");
-    // }
+    /*if (mapController == null) return;
+
+    try {
+      // 1. Handle Start Point Marker
+      if (_startPoint != null) {
+        debugPrint("Debug: Updating start-source with point");
+        await mapController!.setGeoJsonSource("start-source", {
+          "type": "Feature",
+          "geometry": {
+            "type": "Point",
+            "coordinates": [_startPoint!.longitude, _startPoint!.latitude]
+          },
+          "properties": {}
+        });
+        await mapController!.setGeoJsonSource("start-source", jsonEncode(startGeoJson) );
+      } else {
+        // Explicitly clear if null, don't remove the source
+        await mapController!.setGeoJsonSource("start-source", jsonEncode( {"type": "FeatureCollection", "features": []}) );
+      }
+
+      // 2. Handle End Point Marker
+      if (_endPoint != null) {
+        debugPrint("Debug: Updating end-source with point");
+        await mapController!.setGeoJsonSource("end-source", {
+          "type": "Feature",
+          "geometry": {
+            "type": "Point",
+            "coordinates": [_endPoint!.longitude, _endPoint!.latitude]
+          },
+          "properties": {}
+        });
+        await mapController!.setGeoJsonSource("end-source", jsonEncode(endGeoJson));
+      } else {
+        await mapController!.setGeoJsonSource("end-source", jsonEncode({"type": "FeatureCollection", "features": []}));
+      }
+    } catch (e) {
+      debugPrint("MapLibre Error in _drawMarkers: $e");
+    }*/
   }
 
   // This actually talks to the MapLibre engine to visualize the path from _makePath
-  void _drawRoute(List<ll2.LatLng> routePoints) async {
-    debugPrint("Debug: _drawroute entered");
-    /*if (mapController == null) return;
+  Future<void> addRouteLayer(List<ll2.LatLng> points) async {
+    if (mapController == null || points.isEmpty) return;
 
-    if (routePoints.length < 2) {
-      // Hide the route if it's invalid
-      //await mapController!.setGeoJsonSource("route-source", {"type": "FeatureCollection", "features": []});
-      return;
-    }
+    //convert points to maplibre verison of LatLng
+    final List<LatLng> convertedPoints = points.map((point) => LatLng(point.latitude, point.longitude)).toList();
+
+
+
     try {
-      // Update the data
-      debugPrint("Debug: _drawRoute: trying to make path visual");
-      final geojson = {
-        "type": "Feature",
-        "geometry": {
-          "type": "LineString",
-          "coordinates": routePoints.map((p) => [p.longitude, p.latitude]).toList(),
-        },
-        "properties": {}
-      };
+      // 1. Clear previous attempt to avoid Duplicate ID crash
+      await mapController!.clearLines();
 
-      // Use a try-catch to prevent JNI crashes if the source isn't ready
-      await mapController!.setGeoJsonSource("route-source", geojson);
-    }catch (e){
-      debugPrint("Debug: _drawRoute: Error drawing route: $e");
-    }*/
-    if (mapController == null) return;
-
-    // try {
-    //   // If the route is too short, just hide the line
-    //   if (routePoints.length < 2) {
-    //     debugPrint("Debug: Route points < 2, clearing visual");
-    //     await mapController!.setGeoJsonSource("route-source", jsonEncode({"type": "FeatureCollection", "features": []}));
-    //     return;
-    //   }
-    //
-    //   debugPrint("Debug: Drawing path with ${routePoints.length} points");
-    //   await mapController!.setGeoJsonSource("route-source", {
-    //     "type": "Feature",
-    //     "geometry": {
-    //       "type": "LineString",
-    //       "coordinates": routePoints.map((p) => [p.longitude, p.latitude]).toList(),
-    //     },
-    //     "properties": {}
-    //   });
-    //   await mapController!.setGeoJsonSource("route-source", jsonEncode(routeGeoJson));
-    // } catch (e) {
-    //   debugPrint("MapLibre Error in _drawRoute: $e");
-    // }
+      // 2. Add the new line
+      await mapController!.addLine(
+        LineOptions(
+          geometry: convertedPoints,
+          lineColor: "#FF0000",
+          lineWidth: 4.0,
+        ),
+      );
+    } catch (e) {
+      print("Caught map error: $e");
+    }
   }
-
-  //Creates the route points argument for draw route using a given start and end, calls _drawroute
+  //Creates the route points argument for draw route using a given start and end, calls _addRouteLayer
   void _makePath(ll2.LatLng start, ll2.LatLng end){
     debugPrint("Debug: Calling routing service");
     final path = _routingService.getRoute(start, end);
     setState(() {
       _routePolyline = path;
     });
-    //_drawRoute(path);//new way to draw 3D maplibre path
+    //print all point in the path
+    print("Path points: ");
+    for(int i = 0; i < path.length; i++){
+      print(path[i]);
+    }
+    addRouteLayer(_routePolyline);//new way to draw 3D maplibre path
   }
 
   // simple method to handle the users start point and route to users end point from selected option from dropdown menu
@@ -498,7 +472,7 @@ class _MapViewState extends State<MapView> {
       _endPoint = endpoint; // setting the _endpoint to be the value from dormLocations list
       //_routePolyline = _routingService.getRoute(_startPoint!, _endPoint!); // restating polyline
     });
-    _drawMarkers();
+    //_drawMarkers();
     _makePath(_startPoint!, _endPoint!);//draw path to selection
 
   }
@@ -720,7 +694,6 @@ class _MapViewState extends State<MapView> {
                   _routePolyline = [];
                 });
                 //_drawMarkers();
-                //_drawRoute([]);
               },
             )
         ],

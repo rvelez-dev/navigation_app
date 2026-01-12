@@ -1,13 +1,12 @@
 
 import 'package:flutter/material.dart';
-import 'package:dropdown_search/dropdown_search.dart';
 
 // StatefulWidget class for dropdown
 class BuildingDropdown extends StatefulWidget {
 
   final Function(String)? onSelected;
 
-  const BuildingDropdown({Key? key, this.onSelected}) : super(key: key);
+  const BuildingDropdown({super.key, this.onSelected});
 
   @override
   State<BuildingDropdown> createState() => _BuildingDropdownState();
