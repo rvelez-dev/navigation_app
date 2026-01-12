@@ -2,7 +2,6 @@ import 'package:latlong2/latlong.dart' as ll2;
 import 'campus_dropdown.dart'; // calling dropdown class
 import 'package:flutter/material.dart';
 import 'package:location/location.dart';
-//import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart' show rootBundle; // Required to load the file
 import 'routing_service.dart'; // Ensure this file exists in your lib folder
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -179,39 +178,6 @@ class _MapViewState extends State<MapView> {
         lineCap: "round",
       ),
     );
-
-    // 2. Setup Start Point Layer (Green Dot)
-    await mapController!.addSource("start-source", const GeojsonSourceProperties(
-        data: {"type": "FeatureCollection", "features": []}
-    ));
-    await mapController!.addCircleLayer(
-      "start-source",
-      "start-layer",
-      const CircleLayerProperties(
-        circleColor: '#4CAF50', // Green
-        circleRadius: 8.0,
-        circleStrokeWidth: 2.0,
-        circleStrokeColor: '#FFFFFF',
-      ),
-    );
-
-    // 3. Setup End Point Layer (Red Dot)
-    await mapController!.addSource("end-source", const GeojsonSourceProperties(
-        data: {"type": "FeatureCollection", "features": []}
-    ));
-    await mapController!.addCircleLayer(
-      "end-source",
-      "end-layer",
-      const CircleLayerProperties(
-        circleColor: '#F44336', // Red
-        circleRadius: 8.0,
-        circleStrokeWidth: 2.0,
-        circleStrokeColor: '#FFFFFF',
-      ),
-    );
-
-    // 4. Force "My Location" to be visible
-    //await mapController!.setMyLocationEnabled(true);
   }
 
   //4. Handle the Tap Logic
@@ -316,83 +282,10 @@ class _MapViewState extends State<MapView> {
         belowLayerId: firstSymbolId,
         sourceLayer: "building",
       );
-      print("3D buildings layer added successfully");
+      debugPrint("3D buildings layer added successfully");
     }catch (e){
-      print("Error adding 3D buildings layer: $e");
+      debugPrint("Error adding 3D buildings layer: $e");
     }
-  }
-
-  void _drawMarkers() async {
-    /*if (mapController == null) return;
-
-    // Update Start Point Data
-    if (_startPoint != null) {
-      debugPrint("Debug: drawing start point");
-      await mapController!.setGeoJsonSource("start-source", {
-        "type": "Feature",
-        "geometry": {
-          "type": "Point",
-          "coordinates": [_startPoint!.longitude, _startPoint!.latitude]
-        },
-        "properties": {} // Empty properties prevents some parser errors
-      });
-    } //else {
-      // If null, hide it by sending empty data
-      //await mapController!.setGeoJsonSource("start-source", {"type": "FeatureCollection", "features": []});
-    //}
-
-    // Update End Point Data
-    if (_endPoint != null) {
-      debugPrint("Debug: drawing end point");
-      await mapController!.setGeoJsonSource("end-source", {
-        "type": "Feature",
-        "geometry": {
-          "type": "Point",
-          "coordinates": [_endPoint!.longitude, _endPoint!.latitude]
-        },
-        "properties": {}
-      });
-    } //else {
-      //await mapController!.setGeoJsonSource("end-source", {"type": "FeatureCollection", "features": []});
-    //}*/
-    /*if (mapController == null) return;
-
-    try {
-      // 1. Handle Start Point Marker
-      if (_startPoint != null) {
-        debugPrint("Debug: Updating start-source with point");
-        await mapController!.setGeoJsonSource("start-source", {
-          "type": "Feature",
-          "geometry": {
-            "type": "Point",
-            "coordinates": [_startPoint!.longitude, _startPoint!.latitude]
-          },
-          "properties": {}
-        });
-        await mapController!.setGeoJsonSource("start-source", jsonEncode(startGeoJson) );
-      } else {
-        // Explicitly clear if null, don't remove the source
-        await mapController!.setGeoJsonSource("start-source", jsonEncode( {"type": "FeatureCollection", "features": []}) );
-      }
-
-      // 2. Handle End Point Marker
-      if (_endPoint != null) {
-        debugPrint("Debug: Updating end-source with point");
-        await mapController!.setGeoJsonSource("end-source", {
-          "type": "Feature",
-          "geometry": {
-            "type": "Point",
-            "coordinates": [_endPoint!.longitude, _endPoint!.latitude]
-          },
-          "properties": {}
-        });
-        await mapController!.setGeoJsonSource("end-source", jsonEncode(endGeoJson));
-      } else {
-        await mapController!.setGeoJsonSource("end-source", jsonEncode({"type": "FeatureCollection", "features": []}));
-      }
-    } catch (e) {
-      debugPrint("MapLibre Error in _drawMarkers: $e");
-    }*/
   }
 
   // This actually talks to the MapLibre engine to visualize the path from _makePath
@@ -428,10 +321,10 @@ class _MapViewState extends State<MapView> {
       _routePolyline = path;
     });
     //print all point in the path
-    print("Path points: ");
+    /*print("Path points: ");
     for(int i = 0; i < path.length; i++){
       print(path[i]);
-    }
+    }*/
     addRouteLayer(_routePolyline);//new way to draw 3D maplibre path
   }
 
@@ -472,7 +365,6 @@ class _MapViewState extends State<MapView> {
       _endPoint = endpoint; // setting the _endpoint to be the value from dormLocations list
       //_routePolyline = _routingService.getRoute(_startPoint!, _endPoint!); // restating polyline
     });
-    //_drawMarkers();
     _makePath(_startPoint!, _endPoint!);//draw path to selection
 
   }
@@ -514,168 +406,6 @@ class _MapViewState extends State<MapView> {
     });
   }
 
-  //@override
-  /*Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar( //header where esu navigation is at
-          foregroundColor: Colors.white,
-          title: const Text('ESU Navigation'),
-          backgroundColor: Colors.redAccent,
-          actions: [
-            if (_startPoint != null)
-              IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () =>
-                      setState(() {
-                        _startPoint = null;
-                        _endPoint = null;
-                        _routePolyline = [];
-                      })
-              )
-          ],
-        ),
-
-        // new toggle button for gps start
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () async {
-            // If we are trying to turn GPS mode ON, check permissions first
-            if (!_useCurrentLocation) {
-              bool hasPermission = await _handleLocationPermission();
-              if (!hasPermission) return; // Exit if they didn't allow it
-            }
-            setState(() {
-              _useCurrentLocation = !_useCurrentLocation;
-
-              if(_useCurrentLocation){//gps mode on
-                if(_currentUserLocation != null){//if users location
-                  _startPoint = _currentUserLocation;//move start marker to there
-
-                  //if there is an existing destination change start point to user and redraw path
-                  if(_endPoint != null) {
-                    _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!);
-                  }
-               }
-              }
-            });
-          },
-          label: Text(_useCurrentLocation ? "GPS Start" : "Manual Start"),
-          icon: Icon(_useCurrentLocation ? Icons.my_location : Icons.edit_location),
-          backgroundColor: _useCurrentLocation ? Colors.blue : Colors.grey,
-        ),
-
-        body : MapLibreMap(
-          // Use OpenFreeMap - it's OSM based and free
-          styleString: "https://tiles.openfreemap.org/styles/bright",
-
-          initialCameraPosition: const CameraPosition(
-            target: LatLng(40.9959155, -75.173446), // campus center
-            zoom: 17.0,
-            //ange camera 45 degrees along pitch
-            tilt: 60,
-          ),
-
-          onMapCreated: (MapLibreMapController controller) {
-            mapController = controller;
-          },
-
-          // This is where we will enable the 3D buildings
-          /*onStyleLoadedCallback: () {
-            _add3DBuildingsLayer();
-
-            Future.delayed(const Duration(milliseconds: 500), () {
-              mapController?.animateCamera(
-                CameraUpdate.tiltTo(60.0),
-              );
-            });
-          },*/
-          onStyleLoadedCallback: _add3DBuildingsLayer,
-
-          // This replaces the 'onTap' from FlutterMap
-          onMapClick: (point, latlng) {
-            _handleMapTap(latlng);
-          },
-        )
-        /*body: FlutterMap(
-                mapController: mapController,
-                options: MapOptions(
-                  initialCenter: const ll2.LatLng(40.9975, -75.1727),
-                  initialZoom: 16.2,
-                  onTap: (tapPosition, point) => _onMapTap(point),
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.example.navigation_app',
-                  ),
-                  // marker for users current location
-
-                  CurrentLocationLayer(
-                    //adding blue marker on map
-                    style: const LocationMarkerStyle(
-
-                      markerSize: Size(17, 17),
-                      markerDirection: MarkerDirection.heading,
-                    ),
-                  ),
-                  // Dropdown menu
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    right: 10,
-                    child: BuildingDropdown(
-                      onSelected: (selectedLocation) {
-                        _handleLocationSelection(selectedLocation); // calling method to turn users selected location into ll2.LatLng points
-                        // figure out how to route selected buildings to user
-                      },
-                    ),
-                  ),
-
-
-                  // 4. Layer for the Route Line
-                  if (_routePolyline.isNotEmpty)
-                    PolylineLayer(
-                      polylines: [
-                        Polyline(
-                          points: _routePolyline,
-                          color: Colors.blue,
-                          strokeWidth: 5.0,
-                        ),
-                      ],
-                    ),
-
-                  // 5. Layer for the Start and End Markers
-                  MarkerLayer(
-                    markers: [
-                      if (_startPoint != null)
-                        Marker(
-                          point: _startPoint!,
-                          child: const Icon(
-                              Icons.location_on, color: Colors.green, size: 35),
-                        ),
-                      if (_endPoint != null)
-                        Marker(
-                          point: _endPoint!,
-                          child: const Icon(
-                              Icons.flag, color: Colors.red, size: 35),
-                        ),
-                    ],
-                  ),
-
-                  RichAttributionWidget(
-                    attributions: [
-                      TextSourceAttribution(
-                        'OpenStreetMap contributors',
-                        onTap: () =>
-                            launchUrl(Uri.parse(
-                            'https://openstreetmap.org/copyright')),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-         */
-    );
-  }*/
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -693,7 +423,6 @@ class _MapViewState extends State<MapView> {
                   _endPoint = null;
                   _routePolyline = [];
                 });
-                //_drawMarkers();
               },
             )
         ],
