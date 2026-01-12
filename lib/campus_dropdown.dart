@@ -25,6 +25,35 @@ class _BuildingDropdownState extends State<BuildingDropdown> {
     'Hawthorn Suites',
     'Sycamore Suites',
   ];
+  final List<String> campusBuildings =[
+    'Mattioli Recreation Center',
+    'Joseph H. & Mildred E. Beers Lecture Hall',
+    'Reibman Administration Building',
+    'Conference Services & Multicultural House',
+    'Abeloff Center for the Performing Arts',
+    'Rosenkrans Hall',
+    'University Center',
+    'Henry A. Ahnert Jr. Alumni Center',
+  ];
+  final List<String> academicBuildings =[
+    'Monroe Hall',
+    'Koehler Fieldhouse and Natatorium',
+    'Kemp Library',
+    'Warren E. & Sandra Hoeffner Science and Technology Center',
+    'Moore Biology Hall',
+    'Gessner Science Hall',
+    'Stroud Hall',
+    'DeNike Center for Human Services',
+    'Fine and Performing Arts Center',
+    'Zimbar-Liljenstein Hall',
+  ];
+  final List<String> food =[
+    'Dansbury Commons',
+  ];
+  final List<String> outdoorPlaces =[
+    'Eiler-Martin Stadium',
+    'Dave Carllyon Pavilion',
+  ];
   // Current selection
   String? _selectedLocation;
 
