@@ -46,6 +46,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   turf: ^0.0.10
   dijkstra: ^0.0.4
+  maplibre_gl: ^0.24.1
 
 dev_dependencies:
   flutter_test:
