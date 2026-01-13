@@ -30,7 +30,8 @@ class _MapViewState extends State<MapView> {
     'Hemlock Suites': ll2.LatLng(40.9982059,-75.1716599),
     'Lenape Residence Hall': ll2.LatLng(40.9984213,-75.1723409),
     'Hawthorn Suites' : ll2.LatLng(40.9994416,-75.1733226),
-    'Sycamore Suites' : ll2.LatLng(40.9971008,-75.1717411)
+    'Sycamore Suites' : ll2.LatLng(40.9971008,-75.1717411),
+    'Dansbury Commons' : ll2.LatLng(40.9970549,-75.174138)
 
 };
 

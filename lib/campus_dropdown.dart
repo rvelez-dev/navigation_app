@@ -93,19 +93,38 @@ class _BuildingDropdownState extends State<BuildingDropdown> {
           ),
         );
       }).toList(),
+        onChanged: (value) {
+          if (value == null) return;
 
-      onChanged: (value) {
-        if (value == null) return;
+          setState(() {
+            // If we are still choosing a category
+            if (_currentItems == selectedCategory) {
+              _selectedLocation = value;
 
-        setState(() {
-          _selectedLocation = value; //selectedlocation in map view
+              if (value == 'Residence Halls') {
+                _currentItems = dorms;
+              }
+              else if (value == 'Campus Buildings') {
+                _currentItems = campusBuildings;
+              }
+              else if (value == 'Academic Buildings') {
+                _currentItems = academicBuildings;
+              }
+              else if (value == 'Food') {
+                _currentItems = food;
+              }
+              /*else if (value == 'Parking Lots') {
+          _currentItems = parkingLots;
+        }*/
+
+              _selectedLocation = null; // reset selection
+            }
+            // Otherwise, this is a FINAL destination
+            else {
+              _selectedLocation = value;
+              widget.onSelected?.call(value);
+            }
+          });
         });
-
-        // Notify MapView
-        if (widget.onSelected != null) {
-          widget.onSelected!(value);
-        }
-      },
-    );
   }
 }
