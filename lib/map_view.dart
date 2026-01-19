@@ -22,7 +22,7 @@ class _MapViewState extends State<MapView> {
   MapLibreMapController? mapController;
 
   //Creating translation of string location to latlang coordinates
-  final Map<String,ll2.LatLng> dormLocations={
+  final Map<String,ll2.LatLng> allLocations={
     'Laurel Residence Hall':ll2.LatLng(40.9959155,-75.173446),
     'Shawnee Residence Hall': ll2.LatLng(40.9963692,-75.1718578),
     'Minsi Residence Hall': ll2.LatLng(40.9955957,-75.1712977),
@@ -31,7 +31,27 @@ class _MapViewState extends State<MapView> {
     'Lenape Residence Hall': ll2.LatLng(40.9984213,-75.1723409),
     'Hawthorn Suites' : ll2.LatLng(40.9994416,-75.1733226),
     'Sycamore Suites' : ll2.LatLng(40.9971008,-75.1717411),
-    'Dansbury Commons' : ll2.LatLng(40.9970549,-75.174138)
+    'Dansbury Commons' : ll2.LatLng(40.9970549,-75.174138),
+    'Monore Hall' : ll2.LatLng(40.9950679,-75.1731268),
+    'Koehler Fieldhouse and Natatorium' : ll2.LatLng(40.9970549,-75.1711553),
+    'Kemp Library' : ll2.LatLng(40.998535,-75.1705461),
+    'Warren E. & Sandra Hoeffner Science and Technology Center' : ll2.LatLng(40.9965026,-75.1761235),
+    'Moore Biology Hall' : ll2.LatLng(40.9963108,-75.1750235),
+    'Gessner Science Hall' : ll2.LatLng(40.9959637,-75.1748588),
+    'Stroud Hall' : ll2.LatLng(40.9957886,-75.1746249),
+    'DeNike Center for Human Services' : ll2.LatLng(40.9936593,-75.1764988),
+    'Fine and Performing Arts Center' : ll2.LatLng(40.9987711,-75.1665964),
+    'Zimbar-Liljenstein Hall' : ll2.LatLng(40.9938668,-75.1739783),
+    'Eiler-Martin Stadium' : ll2.LatLng(40.9940069,-75.1728448),
+    'Dave Carllyon Pavilion' : ll2.LatLng(40.9985246,-75.1728687),
+    'Mattioli Recreation Center' : ll2.LatLng(40.995681,-75.1699969),
+    'Joseph H. & Mildred E. Beers Lecture Hall' : ll2.LatLng(40.9954604,-75.1750394),
+    'Reibman Administration Building' : ll2.LatLng(40.9958995,-75.1770572),
+    'Conference Services & Multicultural House' : ll2.LatLng(40.9957553,-75.1764082),
+    'Abeloff Center for the Performing Arts' : ll2.LatLng(40.9944137,-75.1753685),
+    'Rosenkrans Hall' : ll2.LatLng(40.9948232,-75.1749201),
+    'University Center' : ll2.LatLng(40.9956658,-75.1739196),
+    'Henry A. Ahnert Jr. Alumni Center' :  ll2.LatLng(40.9996531,-75.1713405),
 
 };
 
@@ -332,7 +352,7 @@ class _MapViewState extends State<MapView> {
   // simple method to handle the users start point and route to users end point from selected option from dropdown menu
   void _handleLocationSelection(String destination){
     // creating variable endpoint from list of dorm building names
-    final ll2.LatLng? endpoint = dormLocations[destination];
+    final ll2.LatLng? endpoint = allLocations[destination];
     _startPoint = _currentUserLocation; // re initializing _startpoint to be current user location
 
     if(endpoint == null){
