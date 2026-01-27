@@ -261,6 +261,28 @@ class _MapViewState extends State<MapView> {
     _onMapTap(convertedPoint);
   }
 
+  //bearing to change camera angle towards location
+  void _tiltAndRotateCamera(ll2.LatLng start, ll2.LatLng destination) {
+    if (mapController == null) return;
+
+    final ll2.Distance distance = const ll2.Distance();
+    double bearing = distance.bearing(start, destination);
+
+
+    // Animates the camera to tilt and face the destination
+    mapController!.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(start.latitude, start.longitude), // Keep user at center/bottom
+          tilt: 60.0,      // Tilts the map to see those 3D buildings
+          zoom: 17.5,      // Slightly zoom in for a "navigation" feel
+          bearing: bearing, // Rotates map to face the destination
+        ),
+      ),
+      duration: const Duration(milliseconds: 1500),
+    );
+  }
+
 
   //puts 3d buildings on map
   void _add3DBuildingsLayer() async {
@@ -291,7 +313,7 @@ class _MapViewState extends State<MapView> {
         // This is the standard source layer name in OpenFreeMap tiles
         "3d-buildings", // A unique ID we give to this new 3D layer
         const FillExtrusionLayerProperties(
-          fillExtrusionColor: '#000000',
+          fillExtrusionColor: '#bdb7b7',
           // Color of the buildings
           // 'render_height' is the property in OSM data that tells us how tall it is
           fillExtrusionHeight: ["*", ["get", "render_height"], 1.5],
@@ -387,7 +409,7 @@ class _MapViewState extends State<MapView> {
       //_routePolyline = _routingService.getRoute(_startPoint!, _endPoint!); // restating polyline
     });
     _makePath(_startPoint!, _endPoint!);//draw path to selection
-
+    _tiltAndRotateCamera(_startPoint!, _endPoint!);
   }
 
   void _onStyleLoaded() async {
@@ -490,6 +512,7 @@ class _MapViewState extends State<MapView> {
               target: LatLng(40.9959155, -75.173446),
               zoom: 17.0,
               tilt: 60,
+
             ),
             onMapCreated: (controller) => mapController = controller,
             onStyleLoadedCallback: _onStyleLoaded,
