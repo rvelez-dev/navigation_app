@@ -61,6 +61,7 @@ class _MapViewState extends State<MapView> {
 
   bool _showBlueDot = false;
   bool _useCurrentLocation = false;
+  bool _autoCenter = true;
   ll2.LatLng? _currentUserLocation;
 
   //location package
@@ -117,10 +118,8 @@ class _MapViewState extends State<MapView> {
         // SAVE the location to your variable here!
         _currentUserLocation = ll2.LatLng(userLocation.latitude!, userLocation.longitude!);
       });
-      /*mapController.move(
-        ll2.LatLng(userLocation.latitude!, userLocation.longitude!),
-        16.2, // zoom
-      );*/
+
+      //initial lock on to user location
       mapController?.animateCamera(
         CameraUpdate.newLatLngZoom(
             LatLng(userLocation.latitude!, userLocation.longitude!),
@@ -143,12 +142,14 @@ class _MapViewState extends State<MapView> {
             }
           });
         }
-        mapController?.animateCamera(
-          CameraUpdate.newLatLngZoom(
-            LatLng(newLoc.latitude!, newLoc.longitude!),
-            mapController?.cameraPosition?.zoom ?? 17.0,
-          ),
-        );
+        if(_autoCenter){//only continue to recenter if the user wants it
+          mapController?.animateCamera(
+            CameraUpdate.newLatLngZoom(
+              LatLng(newLoc.latitude!, newLoc.longitude!),
+              mapController?.cameraPosition?.zoom ?? 17.0,
+            ),
+          );
+        }
       }
     });
   }
@@ -632,6 +633,34 @@ class _MapViewState extends State<MapView> {
               ),
             ),
           ),
+          if (_showBlueDot) // Only show if location permissions/engine are active
+            Positioned(
+              bottom: 100, // Above your main FloatingActionButton
+              right: 16,
+              child: FloatingActionButton(
+                mini: true,
+                // Blue when following, grey when "free look"
+                backgroundColor: _autoCenter ? Colors.blue : Colors.white,
+                onPressed: () {
+                  setState(() {
+                    _autoCenter = !_autoCenter; // Toggle the boolean
+                  });
+
+                  // If turning ON, snap immediately to the user
+                  if (_autoCenter && _currentUserLocation != null) {
+                    mapController?.animateCamera(
+                      CameraUpdate.newLatLng(
+                        LatLng(_currentUserLocation!.latitude, _currentUserLocation!.longitude),
+                      ),
+                    );
+                  }
+                },
+                child: Icon(
+                  _autoCenter ? Icons.gps_fixed : Icons.gps_not_fixed,
+                  color: _autoCenter ? Colors.white : Colors.blue,
+                ),
+              ),
+            ),
         ],
       ),
     );
