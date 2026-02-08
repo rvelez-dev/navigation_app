@@ -14,6 +14,16 @@ class BuildingDropdown extends StatefulWidget {
 
 //class for dropdown menu
 class _BuildingDropdownState extends State<BuildingDropdown> {
+  //creating list to hold all categories
+  final List<String>selectedCategory = [
+    'Residence Halls',
+    'Campus Buildings',
+    'Academic Buildings',
+    'Food',
+    'Outdoor Spaces & Fields',
+  ];
+
+
   //creating arrays for different locations
   final List<String> dorms = [
     'Laurel Residence Hall',
@@ -56,6 +66,15 @@ class _BuildingDropdownState extends State<BuildingDropdown> {
   ];
   // Current selection
   String? _selectedLocation;
+  //creating a placeholder list
+  late List<String> _currentItems =[];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentItems = selectedCategory;
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -65,28 +84,47 @@ class _BuildingDropdownState extends State<BuildingDropdown> {
       value: _selectedLocation,
       isExpanded: true,
 
-      items: dorms.map((dorm) {
+      items: _currentItems.map((item) {
         return DropdownMenuItem<String>(
-          value: dorm,
+          value: item,
           child: Text(
-            dorm,
+            item,
             style: const TextStyle(fontSize: 15),
           ),
         );
       }).toList(),
+        onChanged: (value) {
+          if (value == null) return;
 
-      onChanged: (value) {
-        if (value == null) return;
+          setState(() {
+            // If we are still choosing a category
+            if (_currentItems == selectedCategory) {
+              _selectedLocation = value;
 
-        setState(() {
-          _selectedLocation = value; //selectedlocation in map view
+              if (value == 'Residence Halls') {
+                _currentItems = dorms;
+              }
+              else if (value == 'Campus Buildings') {
+                _currentItems = campusBuildings;
+              }
+              else if (value == 'Academic Buildings') {
+                _currentItems = academicBuildings;
+              }
+              else if (value == 'Food') {
+                _currentItems = food;
+              }
+              /*else if (value == 'Parking Lots') {
+          _currentItems = parkingLots;
+        }*/
+
+              _selectedLocation = null; // reset selection
+            }
+            // Otherwise, this is a FINAL destination
+            else {
+              _selectedLocation = value;
+              widget.onSelected?.call(value);
+            }
+          });
         });
-
-        // Notify MapView
-        if (widget.onSelected != null) {
-          widget.onSelected!(value);
-        }
-      },
-    );
   }
 }
