@@ -32,7 +32,7 @@ class _MapViewState extends State<MapView> {
     'Hawthorn Suites' : ll2.LatLng(40.9994416,-75.1733226),
     'Sycamore Suites' : ll2.LatLng(40.9971008,-75.1717411),
     'Dansbury Commons' : ll2.LatLng(40.9970549,-75.174138),
-    'Monore Hall' : ll2.LatLng(40.9950679,-75.1731268),
+    'Monroe Hall' : ll2.LatLng(40.9950679,-75.1731268),
     'Koehler Fieldhouse and Natatorium' : ll2.LatLng(40.9970549,-75.1711553),
     'Kemp Library' : ll2.LatLng(40.998535,-75.1705461),
     'Warren E. & Sandra Hoeffner Science and Technology Center' : ll2.LatLng(40.9965026,-75.1761235),
@@ -412,8 +412,10 @@ class _MapViewState extends State<MapView> {
     _tiltAndRotateCamera(_startPoint!, _endPoint!);
   }
 
+
   void _onStyleLoaded() async {
     debugPrint("Debug: making layers and buildings, onstyleloaded called");
+
     // 1. Add 3D buildings
     _add3DBuildingsLayer();
     // 2. create layers for the user, route, start, and end points
@@ -452,24 +454,6 @@ class _MapViewState extends State<MapView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        foregroundColor: Colors.white,
-        title: const Text('ESU Navigation'),
-        backgroundColor: Colors.redAccent,
-        actions: [
-          if (_startPoint != null || _endPoint != null) // improved check
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                setState(() {
-                  _startPoint = null;
-                  _endPoint = null;
-                  _routePolyline = [];
-                });
-              },
-            )
-        ],
-      ),
 
       // GPS Toggle Button
       floatingActionButton: FloatingActionButton.extended(
@@ -522,24 +506,17 @@ class _MapViewState extends State<MapView> {
           ),
 
           // 2. The Dropdown (Top Layer)
+          // positioning of search bar
           Positioned(
-            top: 10,
+            top: 30,
             left: 10,
             right: 10,
-            child: Container(
-              // Optional: Add a subtle background so the text is readable over the map
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: const [BoxShadow(blurRadius: 4, color: Colors.black26)],
-              ),
-              child: BuildingDropdown(
+            child: CampusSearchBar(
+
                 onSelected: (selectedLocation) {
                   _handleLocationSelection(selectedLocation);
                 },
               ),
-            ),
           ),
         ],
       ),
