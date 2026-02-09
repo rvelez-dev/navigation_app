@@ -17,8 +17,7 @@ class _MapViewState extends State<MapView> {
   // 1. Create the instance
   final RoutingService _routingService = RoutingService();
 
-  // marker of user
-  //final MapController mapController = MapController();
+  //hosts the map platform and the layers within it
   MapLibreMapController? mapController;
 
   //Creating translation of string location to latlang coordinates
@@ -52,8 +51,7 @@ class _MapViewState extends State<MapView> {
     'Rosenkrans Hall' : ll2.LatLng(40.9948232,-75.1749201),
     'University Center' : ll2.LatLng(40.9956658,-75.1739196),
     'Henry A. Ahnert Jr. Alumni Center' :  ll2.LatLng(40.9996531,-75.1713405),
-
-};
+  };
 
   // State variables to track navigation
   ll2.LatLng? _startPoint;
@@ -179,29 +177,7 @@ class _MapViewState extends State<MapView> {
     return true;
   }
 
-  //3. Setup Separate Layers
-  void _setupMapLayers() async {
-    debugPrint("Debug: setupMapLayers entered");
-    if (mapController == null) return;
-
-    // 1. Setup Route Layer (Bottom)
-    // We initialize it with an empty FeatureCollection so it doesn't show yet
-    await mapController!.addSource("route-source", const GeojsonSourceProperties(
-        data: {"type": "FeatureCollection", "features": []}
-    ));
-    await mapController!.addLineLayer(
-      "route-source",
-      "route-layer",
-      const LineLayerProperties(
-        lineColor: '#2196F3', // Blue
-        lineWidth: 6.0,
-        lineJoin: "round",
-        lineCap: "round",
-      ),
-    );
-  }
-
-  //4. Handle the Tap Logic
+  //Handle the Tap Logic
   Future<void> _onMapTap(ll2.LatLng point) async {
     if (!_isGraphLoaded) return; // Don't allow taps until data is ready
     debugPrint("Debug: _onMapTap: entered");
@@ -244,10 +220,10 @@ class _MapViewState extends State<MapView> {
     //_drawMarkers(); // Updates the green/red dots
     if (_startPoint != null && _endPoint != null) {
       debugPrint("Debug: _onMapTap: drawing path from $_startPoint to $_endPoint");
-      _makePath(_startPoint!, _endPoint!); // Updates the blue line
+      _makePath(_startPoint!, _endPoint!); // Updates the route line
     }
   }
-  //new wrapper function with maplibre
+
   // This handles the click from MapLibre and converts it for your RoutingService
   void _handleMapTap(LatLng mapLibrePoint) {
     // Convert MapLibre LatLng to your existing ll2.LatLng format
@@ -283,9 +259,8 @@ class _MapViewState extends State<MapView> {
     );
   }
 
-
   //puts 3d buildings on map
-  void _add3DBuildingsLayer() async {
+  Future <void> _add3DBuildingsLayer() async {
     // Check if the controller is ready
     if (mapController == null) return;
 
@@ -313,8 +288,8 @@ class _MapViewState extends State<MapView> {
         // This is the standard source layer name in OpenFreeMap tiles
         "3d-buildings", // A unique ID we give to this new 3D layer
         const FillExtrusionLayerProperties(
-          fillExtrusionColor: '#bdb7b7',
           // Color of the buildings
+          fillExtrusionColor: '#808080',
           // 'render_height' is the property in OSM data that tells us how tall it is
           fillExtrusionHeight: ["*", ["get", "render_height"], 1.5],
           fillExtrusionBase: ["get", "render_min_height"],
@@ -331,14 +306,128 @@ class _MapViewState extends State<MapView> {
     }
   }
 
+  //puts directional labels over designated buildings
+  Future<void> _addLabelsLayer() async {
+    if (mapController == null) return;
+
+    try {
+      // 1. Add Source
+      await mapController!.addSource("building-labels-source", GeojsonSourceProperties(
+          data: {
+            "type": "FeatureCollection",
+            "features": [
+              { "type": "Feature", "properties": { "name": "Eiler-Martin Stadium" }, "geometry": { "type": "Point", "coordinates": [-75.1727, 40.9936] } },
+              { "type": "Feature", "properties": { "name": "Dansbury Commons" }, "geometry": { "type": "Point", "coordinates": [-75.1736, 40.9970] } },
+              { "type": "Feature", "properties": { "name": "Flagler-Metzgar Center" }, "geometry": { "type": "Point", "coordinates": [-75.1729, 40.9970] } },
+              { "type": "Feature", "properties": { "name": "Monroe Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1727, 40.9951] } },
+              { "type": "Feature", "properties": { "name": "Koehler Fieldhouse and Natatorium" }, "geometry": { "type": "Point", "coordinates": [-75.1703, 40.9968] } },
+              { "type": "Feature", "properties": { "name": "Kemp Library" }, "geometry": { "type": "Point", "coordinates": [-75.1701, 40.9984] } },
+              { "type": "Feature", "properties": { "name": "Mattioli Recreation Center" }, "geometry": { "type": "Point", "coordinates": [-75.1701, 40.9953] } },
+              { "type": "Feature", "properties": { "name": "Computing Center" }, "geometry": { "type": "Point", "coordinates": [-75.1745, 40.9959] } },
+              { "type": "Feature", "properties": { "name": "Beers Lecture Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1749, 40.9955] } },
+              { "type": "Feature", "properties": { "name": "Reibman Administration Building" }, "geometry": { "type": "Point", "coordinates": [-75.1768, 40.9957] } },
+              { "type": "Feature", "properties": { "name": "Moore Biology Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1749, 40.9965] } },
+              { "type": "Feature", "properties": { "name": "Gessner" }, "geometry": { "type": "Point", "coordinates": [-75.1751, 40.9958] } },
+              { "type": "Feature", "properties": { "name": "Sci-Tech Center" }, "geometry": { "type": "Point", "coordinates": [-75.1758, 40.9965] } },
+              { "type": "Feature", "properties": { "name": "Stroud Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1741, 40.99545] } },
+              { "type": "Feature", "properties": { "name": "University Center"} , "geometry": { "type": "Point", "coordinates": [-75.1738, 40.9961] } },
+              { "type": "Feature", "properties": { "name": "University Center (soon)"} , "geometry": { "type": "Point", "coordinates": [-75.17363, 40.99553] } },
+              { "type": "Feature", "properties": { "name": "Laurel Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1730, 40.9961] } },
+              { "type": "Feature", "properties": { "name": "Shawnee Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1720, 40.9960] } },
+              { "type": "Feature", "properties": { "name": "Minsi Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1718, 40.9954] } },
+              { "type": "Feature", "properties": { "name": "Linden Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1711, 40.9961] } },
+              { "type": "Feature", "properties": { "name": "Hemlock Suites" }, "geometry": { "type": "Point", "coordinates": [-75.1713, 40.9978] } },
+              { "type": "Feature", "properties": { "name": "Lenape Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1720, 40.9986] } },
+              { "type": "Feature", "properties": { "name": "Hawthorn Suites" }, "geometry": { "type": "Point", "coordinates": [-75.1727, 40.9991] } },
+              { "type": "Feature", "properties": { "name": "Sycamore Suites" }, "geometry": { "type": "Point", "coordinates": [-75.1722, 40.9974] } },
+              { "type": "Feature", "properties": { "name": "Abeloff" }, "geometry": { "type": "Point", "coordinates": [-75.175136, 40.994328] } },
+              { "type": "Feature", "properties": { "name": "Wess 90.3 Radio" }, "geometry": { "type": "Point", "coordinates": [-75.1738, 40.9949] } },
+              { "type": "Feature", "properties": { "name": "Zimbar-Liljenstein Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1735, 40.9938] } },
+              { "type": "Feature", "properties": { "name": "Rosenkrans" }, "geometry": { "type": "Point", "coordinates": [-75.174627, 40.994553] } },
+              { "type": "Feature", "properties": { "name": "DeNike" }, "geometry": { "type": "Point", "coordinates": [-75.17602, 40.994049] } },
+              { "type": "Feature", "properties": { "name": "Innovation Center" }, "geometry": { "type": "Point", "coordinates": [-75.1783, 40.9946] } },
+              { "type": "Feature", "properties": { "name": "Facilities Management" }, "geometry": { "type": "Point", "coordinates": [-75.1768, 40.9975] } },
+              { "type": "Feature", "properties": { "name": "University Ridge" }, "geometry": { "type": "Point", "coordinates": [-75.1834, 40.9900] } },
+              { "type": "Feature", "properties": { "name": "Fine and Performing Arts" }, "geometry": { "type": "Point", "coordinates": [-75.166295, 40.998738] } }
+
+            ]
+          }
+      ));
+      //debugPrint("Source added.");
+
+      // 2. Add Symbol Layer
+      await mapController!.addSymbolLayer(
+        "building-labels-source",
+        "building-labels-display-layer",
+        const SymbolLayerProperties(
+          textField: ["get", "name"],
+          textColor: "#333333",
+          // "Open Sans Bold" is crisper than Regular.
+          // If it fails to load, it will fall back to the map's default.
+          textFont: ["Noto Sans Regular"],
+          textTransform: "uppercase", // Makes it look like an official blueprint
+          textLetterSpacing: 0.1,
+          //textSize: 14,
+          textSize: [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            15, 10.0,
+            18, 14.0
+          ],
+          // A white outline ensures text is readable on top of grey buildings
+          textHaloColor: "#FFFFFF",
+          textHaloWidth: 2.0,
+          textHaloBlur: 0.5, // Softens the edge of the halo
+
+          textAllowOverlap: true,
+
+        ),
+      );
+      //debugPrint("Label layer command sent.");
+
+      /* 3. confirming layer existence
+      final finalLayers = await mapController!.getLayerIds();
+      if (finalLayers.contains("building-labels-display-layer")) {
+        debugPrint("SUCCESS: 'building-labels-display-layer' is now in the map tree!");
+      } else {
+        debugPrint("FAILURE: Layer still not in map tree. Check native logs (Logcat/Xcode).");
+      }*/
+
+    } catch (e) {
+      debugPrint("CRASH in _setupMapLayers: $e");
+    }
+
+  }
+
+  //allows routing to work properly by adding the data of the walkways to the mapcontroller as a layer
+  //routing basically reveals parts of this layer necessary to make the path
+  Future<void> _addRouteSource() async {
+    debugPrint("Debug: setupMapLayers entered");
+    if (mapController == null) return;
+
+    // 1. Setup Route Layer (Bottom)
+    // We initialize it with an empty FeatureCollection so it doesn't show yet
+    await mapController!.addSource("route-source", const GeojsonSourceProperties(
+        data: {"type": "FeatureCollection", "features": []}
+    ));
+    await mapController!.addLineLayer(
+      "route-source",
+      "route-layer",
+      const LineLayerProperties(
+        lineColor: '#2196F3', // Red
+        lineWidth: 6.0,
+        lineJoin: "round",
+        lineCap: "round",
+      ),
+    );
+  }
   // This actually talks to the MapLibre engine to visualize the path from _makePath
   Future<void> addRouteLayer(List<ll2.LatLng> points) async {
     if (mapController == null || points.isEmpty) return;
 
     //convert points to maplibre verison of LatLng
     final List<LatLng> convertedPoints = points.map((point) => LatLng(point.latitude, point.longitude)).toList();
-
-
 
     try {
       // 1. Clear previous attempt to avoid Duplicate ID crash
@@ -353,9 +442,10 @@ class _MapViewState extends State<MapView> {
         ),
       );
     } catch (e) {
-      print("Caught map error: $e");
+      debugPrint("Caught map error: $e");
     }
   }
+
   //Creates the route points argument for draw route using a given start and end, calls _addRouteLayer
   void _makePath(ll2.LatLng start, ll2.LatLng end){
     debugPrint("Debug: Calling routing service");
@@ -417,28 +507,30 @@ class _MapViewState extends State<MapView> {
     debugPrint("Debug: making layers and buildings, onstyleloaded called");
 
     // 1. Add 3D buildings
-    _add3DBuildingsLayer();
-    // 2. create layers for the user, route, start, and end points
-    _setupMapLayers();
+    await _add3DBuildingsLayer();
+    // 2. create layers for the user, route, and blue dot
+    await _addLabelsLayer();
+    // 3. add the source data for routing
+    await _addRouteSource();
 
-    // 3. Check permission one last time before telling the map to show the dot
-    PermissionStatus permissionStatus = await _location.hasPermission(); //
+    // 4. Enable the blue dot now that the style is ready. Check permission one last time before telling the map to show the dot
+    PermissionStatus permissionStatus = await _location.hasPermission();
 
     if (permissionStatus == PermissionStatus.granted) {
-      // Only set this to true AFTER we are certain we have permission
+      // Only set this to true once we are certain we have permission
       await mapController?.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
       debugPrint("Blue dot engine started.");
       setState(() {
         _showBlueDot = true;
       });
       // We give the engine a small delay to process the state change
-      Future.delayed(const Duration(milliseconds: 500), () async {
+      //Future.delayed(const Duration(milliseconds: 500), () async {
         if (mapController != null) {
           // This 'kickstarts' the native location renderer
           await mapController!.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
           debugPrint("Blue dot engine successfully kickstarted.");
         }
-      });
+      //});
     } else {
       debugPrint("Location permission not granted yet - blue dot suppressed");
     }
@@ -496,7 +588,6 @@ class _MapViewState extends State<MapView> {
               target: LatLng(40.9959155, -75.173446),
               zoom: 17.0,
               tilt: 60,
-
             ),
             onMapCreated: (controller) => mapController = controller,
             onStyleLoadedCallback: _onStyleLoaded,
