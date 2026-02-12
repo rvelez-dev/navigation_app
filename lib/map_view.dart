@@ -5,6 +5,7 @@ import 'package:location/location.dart';
 import 'package:flutter/services.dart' show rootBundle; // Required to load the file
 import 'routing_service.dart'; // Ensure this file exists in your lib folder
 import 'package:maplibre_gl/maplibre_gl.dart';
+import 'dart:typed_data'; // Required for Uint8List
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -463,6 +464,17 @@ class _MapViewState extends State<MapView> {
         circleOpacity: 1.0,
       ),
     );
+    await mapController?.addSymbolLayer(
+      "destination-source",
+      "endpoint_logo",
+      SymbolLayerProperties(
+        iconImage: "warrior_logo", // matches the name you gave in Step 4
+        iconSize: 0.35,       // Adjust based on how big your PNG is
+        iconAnchor: "bottom", // IMPORTANT: puts the tip of the pin on the spot
+        iconAllowOverlap: true,
+      ),
+    );
+
   }
   //Creates the route points argument for draw route using a given start and end, calls _addRouteLayer
   void _makePath(ll2.LatLng start, ll2.LatLng end){
@@ -522,9 +534,16 @@ class _MapViewState extends State<MapView> {
     _tiltAndRotateCamera(_startPoint!, _endPoint!);
   }
 
+  Future<void> _addImageFromAsset(String name, String assetName) async {
+    final ByteData bytes = await rootBundle.load(assetName);
+    final Uint8List list = bytes.buffer.asUint8List();
+    return mapController?.addImage(name, list);
+  }
 
   void _onStyleLoaded() async {
-    debugPrint("Debug: making layers and buildings, onstyleloaded called");
+    //debugPrint("Debug: making layers and buildings, onstyleloaded called");
+
+    await _addImageFromAsset("warrior_logo", "assets/images/esu_warrior_logo.png");
 
     // 1. Add 3D buildings
     await _add3DBuildingsLayer();
@@ -548,7 +567,7 @@ class _MapViewState extends State<MapView> {
         if (mapController != null) {
           // This 'kickstarts' the native location renderer
           await mapController!.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
-          debugPrint("Blue dot engine successfully kickstarted.");
+          //debugPrint("Blue dot engine successfully kickstarted.");
         }
       //});
     } else {
