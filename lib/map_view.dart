@@ -5,6 +5,7 @@ import 'package:location/location.dart';
 import 'package:flutter/services.dart' show rootBundle; // Required to load the file
 import 'routing_service.dart'; // Ensure this file exists in your lib folder
 import 'package:maplibre_gl/maplibre_gl.dart';
+import 'dart:async';
 import 'dart:typed_data'; // Required for Uint8List
 
 class MapView extends StatefulWidget {
@@ -22,7 +23,7 @@ class _MapViewState extends State<MapView> {
   MapLibreMapController? mapController;
 
   //Creating translation of string location to latlang coordinates
-  final Map<String,ll2.LatLng> allLocations={
+  static Map<String,ll2.LatLng> allLocations={
     'Laurel Residence Hall':ll2.LatLng(40.9959155,-75.173446),
     'Shawnee Residence Hall': ll2.LatLng(40.9963692,-75.1718578),
     'Minsi Residence Hall': ll2.LatLng(40.9955957,-75.1712977),
@@ -72,11 +73,36 @@ class _MapViewState extends State<MapView> {
   //location package
   final Location _location = Location();
 
+  //Debounce timers to prevent excessive setState calls
+  Timer? _locationUpdateTimer;
+  Timer? _routeUpdateTimer;
+  StreamSubscription<LocationData>? _locationSubscription;
+
+
   @override
   void initState() {
     super.initState();
-    _initializeRouting();
-    _requestLocationPermissionAndCenter();
+    _initializeAsync();
+    //_initializeRouting();
+    //_requestLocationPermissionAndCenter();
+  }
+
+  @override
+  void dispose(){
+    //clean up timers and subscriptions
+    _locationUpdateTimer?.cancel();
+    _routeUpdateTimer?.cancel();
+    _locationSubscription?.cancel();
+    super.dispose();
+  }
+
+  //async method
+  Future<void> _initializeAsync() async {
+    //starting both operations concurrently instead of sequentially
+    await Future.wait([
+      _initializeRouting(),
+      _requestLocationPermissionAndCenter(),
+    ]);
   }
 
   // 2. Load the GeoJSON file into the service
@@ -85,9 +111,12 @@ class _MapViewState extends State<MapView> {
       final String geoJsonData = await rootBundle.loadString(
           'assets/esu_jsons/walkways.geojson');
       _routingService.loadGeoJson(geoJsonData);
-      setState(() {
-        _isGraphLoaded = true;
-      });
+
+      if(mounted) {
+        setState(() {
+          _isGraphLoaded = true;
+        });
+      }
       debugPrint("graph loaded successfully");
     } catch (e) {
       debugPrint("Error loading GeoJSON: $e");
@@ -114,15 +143,21 @@ class _MapViewState extends State<MapView> {
       accuracy: LocationAccuracy.high,
       interval: 1500, // Update every 1.5 seconds
       distanceFilter: 3, // Only if the user has moved, checking when not moved causes too many updates
+      //reducing update frequency from 1.5s to 3s to reduce setState calls
+      interval: 3000, // Update every 3 seconds
+      distanceFilter: 5, // only update if moved 5 meters (can change back to zero if needed)
     );
 
     //Getting current location and move map accordingly
     final LocationData userLocation = await _location.getLocation();
     if(userLocation.latitude !=null && userLocation.longitude != null){
-      setState(() {
-        // SAVE the location to your variable here!
-        _currentUserLocation = ll2.LatLng(userLocation.latitude!, userLocation.longitude!);
-      });
+      if(mounted) {
+        setState(() {
+          // SAVE the location to your variable here!
+          _currentUserLocation =
+              ll2.LatLng(userLocation.latitude!, userLocation.longitude!);
+        });
+      }
 
       //initial lock on to user location
       mapController?.animateCamera(
@@ -134,8 +169,70 @@ class _MapViewState extends State<MapView> {
       //setState(() {}); // COMMENTED for optimization, refreshes map to show currentLocationLayer
     }
 
+    //debounce location updates to prevent excessive setState calls
+    _locationSubscription = _location.onLocationChanged.listen((LocationData newLoc){
+      if(newLoc.latitude != null && newLoc.longitude != null) {
+        _handleLocationUpdate(newLoc);
+      }
+    });
+  }
+
+  //debounced location update handler
+  void _handleLocationUpdate(LocationData newLoc){
+    //cancel existing timer
+    _locationUpdateTimer?.cancel();
+
+    //Update location immediately (no setState yet)
+    _currentUserLocation = ll2.LatLng(newLoc.latitude!,newLoc.longitude!);
+
+    //Batch UI updates - only call setState every 500ms max
+    _locationUpdateTimer = Timer(const Duration(milliseconds: 500), (){
+      if(!mounted) return;
+
+      bool needsUpdate = false;
+
+      if(_useCurrentLocation){
+        _startPoint = _currentUserLocation;
+        needsUpdate = true;
+
+        //debounce route recalculation
+        if(_endPoint != null){
+          _scheduleRouteUpdate();
+        }
+      }
+      if(_autoCenter){
+        mapController?.animateCamera(
+            CameraUpdate.newLatLngZoom(
+              LatLng(newLoc.latitude!, newLoc.longitude!),
+              mapController?.cameraPosition?.zoom ?? 17.0,
+            ),
+        );
+      }
+      //Only call setState if something changed
+      if(needsUpdate && mounted){
+        setState(() {});
+      }
+    });
+  }
+
+  //method to debounce route recalculation
+  void _scheduleRouteUpdate(){
+    _routeUpdateTimer?.cancel();
+    _routeUpdateTimer = Timer(const Duration(milliseconds: 1000), (){
+      if(_startPoint != null && _endPoint != null && mounted){
+        final newRoute = _routingService.getRoute(_startPoint!, _endPoint!);
+        if(mounted){
+          setState(() {
+            _routePolyline = newRoute;
+          });
+          addRouteLayer(_routePolyline);
+        }
+      }
+    });
+  }
+
     //location updates and recenter if needed
-    _location.onLocationChanged.listen((LocationData newLoc){
+   /* _location.onLocationChanged.listen((LocationData newLoc){
       if(newLoc.latitude != null && newLoc.longitude != null){
         _currentUserLocation = ll2.LatLng(newLoc.latitude!, newLoc.longitude!);
         if(_useCurrentLocation){
@@ -156,8 +253,8 @@ class _MapViewState extends State<MapView> {
           );
         }
       }
-    });
-  }
+    });*/
+  //
 
   Future<bool> _handleLocationPermission() async {
     bool serviceEnabled = await _location.serviceEnabled();
@@ -174,9 +271,12 @@ class _MapViewState extends State<MapView> {
 
     // If the user permanently denied permission, this will return false
     if (permissionGranted == PermissionStatus.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Location permission is permanently denied. Please enable it in settings.")),
-      );
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(
+              "Location permission is permanently denied. Please enable it in settings.")),
+        );
+      }
       return false;
     }
 
@@ -189,40 +289,54 @@ class _MapViewState extends State<MapView> {
     //debugPrint("Debug: _onMapTap: entered");
     if (_useCurrentLocation && _currentUserLocation == null) {
       final LocationData forcedLoc = await _location.getLocation();
-      if (forcedLoc.latitude != null) {
+      if (forcedLoc.latitude != null && mounted) {
         setState(() {
           _currentUserLocation = ll2.LatLng(forcedLoc.latitude!, forcedLoc.longitude!);
         });
       }
     }
 
-    setState(() {
+    //Calculate route outside setState, then update once
+    ll2.LatLng? newStart;
+    ll2.LatLng? newEnd;
+
+
+    //setState(() {
       //gps is start, tap is always the destination
       if(_useCurrentLocation){
         if(_currentUserLocation == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content:  Text("Debug: _onMapTap: GPS location not found")),
-          );
+          if(mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text("Debug: _onMapTap: GPS location not found")),
+            );
+          }
           return;
         }
         //set destination to tap point
         debugPrint("Debug: _onMapTap: GPS mode on -> location found");
-        _startPoint = _currentUserLocation;
-        _endPoint = point;
+        newStart = _currentUserLocation;
+        newEnd = point;
       }else{
         //manual start and end select mode
         //debugPrint("Debug: _onMapTap: Manual mode on");
         if (_startPoint == null || (_startPoint != null && _endPoint != null)) {
           // Start fresh: set Point A and clear old route
-          _startPoint = point;
-          _endPoint = null;
+          newStart = point;
+          newEnd = null;
           //_routePolyline = [];
         }else{
           // Set Point B and calculate the path
-          _endPoint = point;
+          newStart = _startPoint;
+          newEnd = point;
         }
       }
-    });
+      if(mounted){
+        setState(() {
+          _startPoint = newStart;
+          _endPoint = newEnd;
+        });
+      }
     //_drawMarkers(); // Updates the green/red dots
     if (_startPoint != null && _endPoint != null) {
       debugPrint("Debug: _onMapTap: drawing path from $_startPoint to $_endPoint");
@@ -289,6 +403,7 @@ class _MapViewState extends State<MapView> {
           //add vertical shading to buildings
           fillExtrusionVerticalGradient: true,
         ),
+        //belowLayerId: firstSymbolId,
         sourceLayer: "building",
       );
       debugPrint("3D buildings layer added successfully");
@@ -298,13 +413,13 @@ class _MapViewState extends State<MapView> {
   }
 
   //puts directional labels over designated buildings
-  Future<void> _addLabelsLayer() async {
-    if (mapController == null) return;
+  static const Map<String,dynamic> _buildingLabelsData = {
+    //if (mapController == null) return;
 
-    try {
+   // try {
       // 1. Add Source
-      await mapController!.addSource("building-labels-source", GeojsonSourceProperties(
-          data: {
+      //await mapController!.addSource("building-labels-source", GeojsonSourceProperties(
+          //data: {
             "type": "FeatureCollection",
             "features": [
               { "type": "Feature", "properties": { "name": "Eiler-Martin Stadium" }, "geometry": { "type": "Point", "coordinates": [-75.1727, 40.9936] } },
@@ -342,15 +457,22 @@ class _MapViewState extends State<MapView> {
               { "type": "Feature", "properties": { "name": "Fine and Performing Arts" }, "geometry": { "type": "Point", "coordinates": [-75.166295, 40.998738] } }
 
             ]
-          }
-      ));
+          };
+      //));
       //debugPrint("Source added.");
+  Future<void> _addLabelsLayer() async {
+    if (mapController == null) return;
 
-      // 2. Add Symbol Layer
-      await mapController!.addSymbolLayer(
+    try {
+      await mapController!.addSource(
         "building-labels-source",
-        "building-labels-display-layer",
-        const SymbolLayerProperties(
+        GeojsonSourceProperties(data: _buildingLabelsData),
+      );
+
+      await mapController!.addSymbolLayer(
+        "building-labels-source",               // sourceId
+        "building-labels-display-layer",        // layerId
+        SymbolLayerProperties(
           textField: ["get", "name"],
           textColor: "#333333",
           // "Open Sans Bold" is crisper than Regular.
@@ -358,7 +480,6 @@ class _MapViewState extends State<MapView> {
           textFont: ["Noto Sans Regular"],
           textTransform: "uppercase", // Makes it look like an official blueprint
           textLetterSpacing: 0.1,
-          //textSize: 14,
           textSize: [
             "interpolate",
             ["linear"],
@@ -377,9 +498,14 @@ class _MapViewState extends State<MapView> {
           // iconOffset: [0, -10], // Push it up slightly above the anchor
           // textOffset: [0, 1], // Push text down below the icon
           textAllowOverlap: true,
-
         ),
       );
+
+      debugPrint("Building labels layer added successfully");
+    } catch (e) {
+      debugPrint("error in _addLabelsLayer: $e");
+    }
+  }
       //debugPrint("Label layer command sent.");
 
       /* 3. confirming layer existence
@@ -390,11 +516,11 @@ class _MapViewState extends State<MapView> {
         debugPrint("FAILURE: Layer still not in map tree. Check native logs (Logcat/Xcode).");
       }*/
 
-    } catch (e) {
-      debugPrint("CRASH in _setupMapLayers: $e");
-    }
+   // } catch (e) {
+     // debugPrint("CRASH in _setupMapLayers: $e");
+   // }
 
-  }
+  //}
 
   //allows routing to work properly by adding the data of the walkways to the mapcontroller as a layer
   //routing basically reveals parts of this layer necessary to make the path
@@ -489,9 +615,13 @@ class _MapViewState extends State<MapView> {
   void _makePath(ll2.LatLng start, ll2.LatLng end){
     debugPrint("Debug: Calling routing service");
     final path = _routingService.getRoute(start, end);
-    setState(() {
-      _routePolyline = path;
-    });
+
+    if(mounted){
+      setState(() {
+        _routePolyline = path;
+      });
+    }
+
     //print all point in the path
     /*print("Path points: ");
     for(int i = 0; i < path.length; i++){
@@ -526,17 +656,21 @@ class _MapViewState extends State<MapView> {
     //otherwise tell them to make a start point
     if(_startPoint==null){
       debugPrint('Start point not set yet.');
-      //send snackbar message to show user issue
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content:  Text("Start point not set yet")),
-      );
+      if(mounted) {
+        //send snackbar message to show user issue
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Start point not set yet")),
+        );
+      }
       return;
     }
-
-    setState(() {
-      _endPoint = endpoint; // setting the _endpoint to be the value from dormLocations list
-     //_routePolyline = _routingService.getRoute(_startPoint!, _endPoint!); // restating polyline
-    });
+    if(mounted) {
+      setState(() {
+        _endPoint =
+            endpoint; // setting the _endpoint to be the value from dormLocations list
+        //_routePolyline = _routingService.getRoute(_startPoint!, _endPoint!); // restating polyline
+      });
+    }
     // Add the marker to the map
     _addDestinationMarker(_endPoint!);
     _makePath(_startPoint!, _endPoint!);//draw path to selection
@@ -623,17 +757,23 @@ class _MapViewState extends State<MapView> {
     await _addImageFromAsset("warrior_logo", "assets/images/esu_warrior_logo.png");
     await _addImageFromAsset("info_icon", "assets/images/info_icon.png");
 
-    // 1. Add 3D buildings
-    await _add3DBuildingsLayer();
-    // 2. create layers for the user, route, and blue dot
-    await _addLabelsLayer();
-    // 3. add the source data for routing
-    await _addRouteSource();
-
+    //add all layers concurrently instead of sequentially
+    try {
+      await Future.wait([
+        // 1. Add 3D buildings
+      _add3DBuildingsLayer(),
+      // 2. create layers for the user, route, and blue dot
+       _addLabelsLayer(),
+      // 3. add the source data for routing
+       _addRouteSource(),
+      ]);
+    }catch (e){
+      debugPrint("Error during layer initialization: $e");
+    }
     // 4. Enable the blue dot now that the style is ready. Check permission one last time before telling the map to show the dot
     PermissionStatus permissionStatus = await _location.hasPermission();
 
-    if (permissionStatus == PermissionStatus.granted) {
+    if (permissionStatus == PermissionStatus.granted && mounted) {
       // Only set this to true once we are certain we have permission
       await mapController?.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
       debugPrint("Blue dot engine started.");
@@ -652,12 +792,12 @@ class _MapViewState extends State<MapView> {
       debugPrint("Location permission not granted yet - blue dot suppressed");
     }
     // 4. Enable the blue dot now that the style is ready
-    Future.delayed(const Duration(milliseconds: 200), () {
+    /*Future.delayed(const Duration(milliseconds: 200), () {
       if (mapController != null) {
         // This forces the "Blue Dot" engine to start
         mapController!.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
       }
-    });
+    });*/
   }
 
   @override
@@ -671,16 +811,18 @@ class _MapViewState extends State<MapView> {
             bool hasPermission = await _handleLocationPermission();
             if (!hasPermission) return;
           }
-          setState(() {
-            _useCurrentLocation = !_useCurrentLocation;
-            if (_useCurrentLocation && _currentUserLocation != null) {
-              _startPoint = _currentUserLocation;
-              // Update route if destination exists
-              if (_endPoint != null) {
-                _makePath(_startPoint!, _endPoint!);
+          if(mounted) {
+            setState(() {
+              _useCurrentLocation = !_useCurrentLocation;
+              if (_useCurrentLocation && _currentUserLocation != null) {
+                _startPoint = _currentUserLocation;
+                // Update route if destination exists
+                if (_endPoint != null) {
+                  _makePath(_startPoint!, _endPoint!);
+                }
               }
-            }
-          });
+            });
+          }
         },
         label: Text(_useCurrentLocation ? "GPS Start" : "Manual Start"),
         icon: Icon(_useCurrentLocation ? Icons.my_location : Icons.edit_location),
@@ -735,9 +877,11 @@ class _MapViewState extends State<MapView> {
                 // Blue when following, grey when "free look"
                 backgroundColor: _autoCenter ? Colors.blue : Colors.white,
                 onPressed: () {
-                  setState(() {
-                    _autoCenter = !_autoCenter; // Toggle the boolean
-                  });
+                  if(mounted) {
+                    setState(() {
+                      _autoCenter = !_autoCenter; // Toggle the boolean
+                    });
+                  }
 
                   // If turning ON, snap immediately to the user
                   if (_autoCenter && _currentUserLocation != null) {
