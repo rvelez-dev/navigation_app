@@ -65,6 +65,10 @@ class _MapViewState extends State<MapView> {
   bool _autoCenter = true;
   ll2.LatLng? _currentUserLocation;
 
+  String? _selectedDestinationName;
+  bool _isRouting = false;
+  final DraggableScrollableController _sheetController = DraggableScrollableController();
+
   //location package
   final Location _location = Location();
 
@@ -109,7 +113,7 @@ class _MapViewState extends State<MapView> {
     await _location.changeSettings(
       accuracy: LocationAccuracy.high,
       interval: 1500, // Update every 1.5 seconds
-      distanceFilter: 0, // Even if the user hasn't moved
+      distanceFilter: 3, // Only if the user has moved, checking when not moved causes too many updates
     );
 
     //Getting current location and move map accordingly
@@ -127,7 +131,7 @@ class _MapViewState extends State<MapView> {
             mapController?.cameraPosition?.zoom ?? 17.0,
         ),
       );
-      setState(() {}); // refreshes map to show currentLocationLayer
+      //setState(() {}); // COMMENTED for optimization, refreshes map to show currentLocationLayer
     }
 
     //location updates and recenter if needed
@@ -364,9 +368,14 @@ class _MapViewState extends State<MapView> {
           ],
           // A white outline ensures text is readable on top of grey buildings
           textHaloColor: "#FFFFFF",
-          textHaloWidth: 2.0,
+          textHaloWidth: 1.5,
           textHaloBlur: 0.5, // Softens the edge of the halo
-
+          //icons idea
+          // iconImage: "info_icon",
+          // iconSize: 0.05,
+          // iconAnchor: "bottom",
+          // iconOffset: [0, -10], // Push it up slightly above the anchor
+          // textOffset: [0, 1], // Push text down below the icon
           textAllowOverlap: true,
 
         ),
@@ -492,7 +501,7 @@ class _MapViewState extends State<MapView> {
   }
 
   // simple method to handle the users start point and route to users end point from selected option from dropdown menu
-  void _handleLocationSelection(String destination){
+  /*void _handleLocationSelection(String destination){
     // creating variable endpoint from list of dorm building names
     final ll2.LatLng? endpoint = allLocations[destination];
     _startPoint = _currentUserLocation; // re initializing _startpoint to be current user location
@@ -532,6 +541,46 @@ class _MapViewState extends State<MapView> {
     _addDestinationMarker(_endPoint!);
     _makePath(_startPoint!, _endPoint!);//draw path to selection
     _tiltAndRotateCamera(_startPoint!, _endPoint!);
+  }*/
+  void _handleLocationSelection(String destination) {
+    final ll2.LatLng? endpoint = allLocations[destination];
+
+    if (endpoint == null) {
+      debugPrint('No coordinates found for $destination');
+      return;
+    }
+
+    setState(() {
+      _selectedDestinationName = destination;
+      _endPoint = endpoint;
+      _isRouting = false; // Reset to false when a new place is picked
+      _routePolyline = []; // Clear the old route data
+    });
+
+    // Clear old route lines from the map visually
+    if (mapController != null) {
+      mapController!.clearLines();
+    }
+
+    // Add the marker to the new destination
+    _addDestinationMarker(_endPoint!);
+
+    // Pan the camera to look at the destination (but don't tilt/route yet)
+    mapController?.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(_endPoint!.latitude, _endPoint!.longitude),
+        17.5,
+      ),
+    );
+
+    // If the sheet was shrunk from a previous route, pop it back up to 30%
+    if (_sheetController.isAttached) {
+      _sheetController.animateTo(
+        0.3,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   Future<void> _addImageFromAsset(String name, String assetName) async {
@@ -540,10 +589,39 @@ class _MapViewState extends State<MapView> {
     return mapController?.addImage(name, list);
   }
 
+  void _startRouting() {
+    // 1. Ensure we have a start point
+    _startPoint = _useCurrentLocation ? _currentUserLocation : _startPoint;
+
+    if (_startPoint == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Start point not set yet. Waiting for GPS or manual tap.")),
+      );
+      return;
+    }
+
+    // 2. Update state to show we are navigating
+    setState(() {
+      _isRouting = true;
+    });
+
+    // 3. Draw the path and move the camera
+    _makePath(_startPoint!, _endPoint!);
+    _tiltAndRotateCamera(_startPoint!, _endPoint!);
+
+    // 4. Shrink the pull-up menu down to 15% of the screen
+    _sheetController.animateTo(
+      0.15,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
   void _onStyleLoaded() async {
     //debugPrint("Debug: making layers and buildings, onstyleloaded called");
 
     await _addImageFromAsset("warrior_logo", "assets/images/esu_warrior_logo.png");
+    await _addImageFromAsset("info_icon", "assets/images/info_icon.png");
 
     // 1. Add 3D buildings
     await _add3DBuildingsLayer();
@@ -675,6 +753,79 @@ class _MapViewState extends State<MapView> {
                   color: _autoCenter ? Colors.white : Colors.blue,
                 ),
               ),
+            ),
+          if (_selectedDestinationName != null)
+            DraggableScrollableSheet(
+              controller: _sheetController,
+              initialChildSize: 0.3, // Starts at 30% of screen
+              minChildSize: 0.1,     // Can shrink down to 10%
+              maxChildSize: 0.9,     // Can pull up to 90%
+              builder: (BuildContext context, ScrollController scrollController) {
+                return Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black26, blurRadius: 10, spreadRadius: 2)
+                    ],
+                  ),
+                  child: SingleChildScrollView(
+                    controller: scrollController, // Links scrolling to dragging
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // The little grey handle at the top
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 5,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+
+                          // Destination Name
+                          Text(
+                            _selectedDestinationName!,
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 15),
+
+                          // The Route Button (Hides when routing starts)
+                          if (!_isRouting)
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: _startRouting, // Triggers our new function
+                                icon: const Icon(Icons.directions_walk),
+                                label: const Text("Start Route", style: TextStyle(fontSize: 18)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            )
+                          else
+                            const Text("Navigating...", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16)),
+
+                          // Future Live Events Section Placeholder
+                          const SizedBox(height: 30),
+                          const Text("Events Today", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const Divider(),
+                          // Your StreamBuilder will go here later
+                          const Text("No events scheduled for this location today."),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
         ],
       ),
