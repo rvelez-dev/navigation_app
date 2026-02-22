@@ -6,6 +6,7 @@ import 'package:flutter/services.dart' show rootBundle; // Required to load the 
 import 'routing_service.dart'; // Ensure this file exists in your lib folder
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'dart:async';
+import 'dart:typed_data'; // Required for Uint8List
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -279,7 +280,7 @@ class _MapViewState extends State<MapView> {
   //Handle the Tap Logic
   Future<void> _onMapTap(ll2.LatLng point) async {
     if (!_isGraphLoaded) return; // Don't allow taps until data is ready
-    debugPrint("Debug: _onMapTap: entered");
+    //debugPrint("Debug: _onMapTap: entered");
     if (_useCurrentLocation && _currentUserLocation == null) {
       final LocationData forcedLoc = await _location.getLocation();
       if (forcedLoc.latitude != null && mounted) {
@@ -312,7 +313,7 @@ class _MapViewState extends State<MapView> {
         newEnd = point;
       }else{
         //manual start and end select mode
-        debugPrint("Debug: _onMapTap: Manual mode on");
+        //debugPrint("Debug: _onMapTap: Manual mode on");
         if (_startPoint == null || (_startPoint != null && _endPoint != null)) {
           // Start fresh: set Point A and clear old route
           newStart = point;
@@ -380,27 +381,13 @@ class _MapViewState extends State<MapView> {
     // Attempt to remove it first in case it partially loaded during a hot reload
     try { await mapController!.removeLayer("3d-buildings"); } catch (e) {}
 
-    //-addressing 3D being under map and labels layers-
-    // 1. Get all layers from the style to find where to insert
-    final layers = await mapController!.getLayerIds();
-
-    // 2. Find the first layer that contains labels (symbols)
-    // so buildings don't cover the street names
-    String? firstSymbolId;
-    for (var id in layers) {
-      if (id.contains('label') || id.contains('place') || id.contains('poi')) {
-        firstSymbolId = id;
-        break;
-      }
-    }
-
     // This adds the 3D extrusion layer to the map style
     try {
       await mapController!.addLayer(
         "openmaptiles",
         // This is the standard source layer name in OpenFreeMap tiles
         "3d-buildings", // A unique ID we give to this new 3D layer
-        const FillExtrusionLayerProperties(
+        FillExtrusionLayerProperties(
           // Color of the buildings
           fillExtrusionColor: '#808080',
           // 'render_height' is the property in OSM data that tells us how tall it is
@@ -410,7 +397,7 @@ class _MapViewState extends State<MapView> {
           //add vertical shading to buildings
           fillExtrusionVerticalGradient: true,
         ),
-        belowLayerId: firstSymbolId,
+        //belowLayerId: firstSymbolId,
         sourceLayer: "building",
       );
       debugPrint("3D buildings layer added successfully");
@@ -482,8 +469,10 @@ class _MapViewState extends State<MapView> {
         SymbolLayerProperties(
           textField: ["get", "name"],
           textColor: "#333333",
+          // "Open Sans Bold" is crisper than Regular.
+          // If it fails to load, it will fall back to the map's default.
           textFont: ["Noto Sans Regular"],
-          textTransform: "uppercase",
+          textTransform: "uppercase", // Makes it look like an official blueprint
           textLetterSpacing: 0.1,
           textSize: [
             "interpolate",
@@ -492,9 +481,11 @@ class _MapViewState extends State<MapView> {
             15, 10.0,
             18, 14.0
           ],
+          // A white outline ensures text is readable on top of grey buildings
           textHaloColor: "#FFFFFF",
           textHaloWidth: 2.0,
-          textHaloBlur: 0.5,
+          textHaloBlur: 0.5, // Softens the edge of the halo
+
           textAllowOverlap: true,
         ),
       );
@@ -566,6 +557,49 @@ class _MapViewState extends State<MapView> {
     }
   }
 
+  Future<void> _addDestinationMarker(ll2.LatLng location) async {
+    // 1. Remove old marker layer if it exists
+    try { await mapController?.removeLayer("destination-pin"); } catch (e) {}
+    try { await mapController?.removeSource("destination-source"); } catch (e) {}
+
+    // 2. Add a GeoJSON source for the single point
+    await mapController?.addSource("destination-source", GeojsonSourceProperties(
+        data: {
+          "type": "FeatureCollection",
+          "features": [{
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [location.longitude, location.latitude]
+            }
+          }]
+        }
+    ));
+
+    // 3. Add a Circle Layer (guaranteed to render)
+    await mapController?.addCircleLayer(
+      "destination-source",
+      "destination-pin",
+      const CircleLayerProperties(
+        circleColor: "#FF0000",      // ESU Red
+        circleRadius: 12,            // Large enough to see
+        circleStrokeWidth: 3,        // White border
+        circleStrokeColor: "#FFFFFF",
+        circleOpacity: 1.0,
+      ),
+    );
+    await mapController?.addSymbolLayer(
+      "destination-source",
+      "endpoint_logo",
+      SymbolLayerProperties(
+        iconImage: "warrior_logo", // matches the name you gave in Step 4
+        iconSize: 0.35,       // Adjust based on how big your PNG is
+        iconAnchor: "bottom", // IMPORTANT: puts the tip of the pin on the spot
+        iconAllowOverlap: true,
+      ),
+    );
+
+  }
   //Creates the route points argument for draw route using a given start and end, calls _addRouteLayer
   void _makePath(ll2.LatLng start, ll2.LatLng end){
     debugPrint("Debug: Calling routing service");
@@ -626,13 +660,22 @@ class _MapViewState extends State<MapView> {
         //_routePolyline = _routingService.getRoute(_startPoint!, _endPoint!); // restating polyline
       });
     }
+    // Add the marker to the map
+    _addDestinationMarker(_endPoint!);
     _makePath(_startPoint!, _endPoint!);//draw path to selection
     _tiltAndRotateCamera(_startPoint!, _endPoint!);
   }
 
+  Future<void> _addImageFromAsset(String name, String assetName) async {
+    final ByteData bytes = await rootBundle.load(assetName);
+    final Uint8List list = bytes.buffer.asUint8List();
+    return mapController?.addImage(name, list);
+  }
 
   void _onStyleLoaded() async {
-    debugPrint("Debug: making layers and buildings, onstyleloaded called");
+    //debugPrint("Debug: making layers and buildings, onstyleloaded called");
+
+    await _addImageFromAsset("warrior_logo", "assets/images/esu_warrior_logo.png");
 
     //add all layers concurrently instead of sequentially
     try {
@@ -662,7 +705,7 @@ class _MapViewState extends State<MapView> {
         if (mapController != null) {
           // This 'kickstarts' the native location renderer
           await mapController!.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
-          debugPrint("Blue dot engine successfully kickstarted.");
+          //debugPrint("Blue dot engine successfully kickstarted.");
         }
       //});
     } else {

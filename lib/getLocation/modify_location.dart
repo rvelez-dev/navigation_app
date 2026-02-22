@@ -29,7 +29,7 @@ class _ModifyLocationState extends State<ModifyLocation> {
     }
     catch (error)
     {
-      print('Error: $error');
+      debugPrint('Error: $error');
     }
   }
 
