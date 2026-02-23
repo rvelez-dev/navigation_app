@@ -7,6 +7,7 @@ import 'routing_service.dart'; // Ensure this file exists in your lib folder
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'dart:async';
 import 'dart:typed_data'; // Required for Uint8List
+import 'package:flutter/foundation.dart'; // for compute()
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -106,6 +107,28 @@ class _MapViewState extends State<MapView> {
   }
 
   // 2. Load the GeoJSON file into the service
+  // A top-level function (required for compute) that does the heavy work
+  Map<String, dynamic> _buildGraphInBackground(String geoJsonString) {
+    // You'd move the parsing logic here and return the graph + allNodes
+    // Since RoutingService is a class, easiest approach: make loadGeoJson
+    // return the built graph instead of mutating state
+    final service = RoutingService();
+    service.loadGeoJson(geoJsonString);
+    return {'graph': service.graph, 'allNodes': service.allNodes};
+  }
+
+  Future<void> _initializeRouting() async {
+    final String geoJsonData = await rootBundle.loadString('assets/esu_jsons/walkways.geojson');
+
+    // This runs _buildGraphInBackground on a background thread
+    final result = await compute(_buildGraphInBackground, geoJsonData);
+
+    _routingService.graph = result['graph'];
+    _routingService.allNodes = result['allNodes'];
+
+    setState(() { _isGraphLoaded = true; });
+  }
+  /*
   Future<void> _initializeRouting() async {
     try {
       final String geoJsonData = await rootBundle.loadString(
@@ -122,6 +145,8 @@ class _MapViewState extends State<MapView> {
       debugPrint("Error loading GeoJSON: $e");
     }
   }
+
+   */
 
   // requesting location permission and move map to current location
   Future<void> _requestLocationPermissionAndCenter() async{
@@ -141,11 +166,10 @@ class _MapViewState extends State<MapView> {
     //manually setting up recurring checks on location every 1.5 seconds
     await _location.changeSettings(
       accuracy: LocationAccuracy.high,
-      interval: 1500, // Update every 1.5 seconds
-      distanceFilter: 3, // Only if the user has moved, checking when not moved causes too many updates
       //reducing update frequency from 1.5s to 3s to reduce setState calls
       interval: 3000, // Update every 3 seconds
-      distanceFilter: 5, // only update if moved 5 meters (can change back to zero if needed)
+      distanceFilter: 5, //only update if moved 5 meters (can change back to zero if needed)
+
     );
 
     //Getting current location and move map accordingly
@@ -166,7 +190,6 @@ class _MapViewState extends State<MapView> {
             mapController?.cameraPosition?.zoom ?? 17.0,
         ),
       );
-      //setState(() {}); // COMMENTED for optimization, refreshes map to show currentLocationLayer
     }
 
     //debounce location updates to prevent excessive setState calls
