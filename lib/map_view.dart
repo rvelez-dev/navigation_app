@@ -107,28 +107,6 @@ class _MapViewState extends State<MapView> {
   }
 
   // 2. Load the GeoJSON file into the service
-  // A top-level function (required for compute) that does the heavy work
-  Map<String, dynamic> _buildGraphInBackground(String geoJsonString) {
-    // You'd move the parsing logic here and return the graph + allNodes
-    // Since RoutingService is a class, easiest approach: make loadGeoJson
-    // return the built graph instead of mutating state
-    final service = RoutingService();
-    service.loadGeoJson(geoJsonString);
-    return {'graph': service.graph, 'allNodes': service.allNodes};
-  }
-
-  Future<void> _initializeRouting() async {
-    final String geoJsonData = await rootBundle.loadString('assets/esu_jsons/walkways.geojson');
-
-    // This runs _buildGraphInBackground on a background thread
-    final result = await compute(_buildGraphInBackground, geoJsonData);
-
-    _routingService.graph = result['graph'];
-    _routingService.allNodes = result['allNodes'];
-
-    setState(() { _isGraphLoaded = true; });
-  }
-  /*
   Future<void> _initializeRouting() async {
     try {
       final String geoJsonData = await rootBundle.loadString(
@@ -145,8 +123,6 @@ class _MapViewState extends State<MapView> {
       debugPrint("Error loading GeoJSON: $e");
     }
   }
-
-   */
 
   // requesting location permission and move map to current location
   Future<void> _requestLocationPermissionAndCenter() async{
@@ -591,10 +567,37 @@ class _MapViewState extends State<MapView> {
     }
   }
 
+
   Future<void> _addDestinationMarker(ll2.LatLng location) async {
-    // 1. Remove old marker layer if it exists
-    try { await mapController?.removeLayer("destination-pin"); } catch (e) {}
-    try { await mapController?.removeSource("destination-source"); } catch (e) {}
+    if (mapController == null) return;
+
+    // Remove layer FIRST (must happen before removing source)
+    try {
+      final layers = await mapController!.getLayerIds();
+      if (layers.contains("destination-pin")) {
+        await mapController!.removeLayer("destination-pin");
+      }
+      if (layers.contains("endpoint_logo")) {
+        await mapController!.removeLayer("endpoint_logo");
+      }
+    } catch (e) {
+      debugPrint("Error removing destination layers: $e");
+    }
+
+    // THEN remove source
+    try {
+      final sources = await mapController!.getSourceIds();
+      if (sources.contains("destination-source")) {
+        await mapController!.removeSource("destination-source");
+      }
+    } catch (e) {
+      debugPrint("Error removing destination source: $e");
+    }
+
+    // Now safely add fresh source and layers
+    // OLD 1. Remove old marker layer if it exists
+    //try { await mapController?.removeLayer("destination-pin"); } catch (e) {}
+    //try { await mapController?.removeSource("destination-source"); } catch (e) {}
 
     // 2. Add a GeoJSON source for the single point
     await mapController?.addSource("destination-source", GeojsonSourceProperties(
@@ -632,8 +635,9 @@ class _MapViewState extends State<MapView> {
         iconAllowOverlap: true,
       ),
     );
-
   }
+
+
   //Creates the route points argument for draw route using a given start and end, calls _addRouteLayer
   void _makePath(ll2.LatLng start, ll2.LatLng end){
     debugPrint("Debug: Calling routing service");
