@@ -25,34 +25,63 @@ class _MapViewState extends State<MapView> {
 
   //Creating translation of string location to latlang coordinates
   static Map<String,ll2.LatLng> allLocations={
-    'Laurel Residence Hall':ll2.LatLng(40.9959155,-75.173446),
-    'Shawnee Residence Hall': ll2.LatLng(40.9963692,-75.1718578),
-    'Minsi Residence Hall': ll2.LatLng(40.9955957,-75.1712977),
-    'Linden Residence Hall': ll2.LatLng(40.9965415, -75.171232),
-    'Hemlock Suites': ll2.LatLng(40.9982059,-75.1716599),
-    'Lenape Residence Hall': ll2.LatLng(40.9984213,-75.1723409),
-    'Hawthorn Suites' : ll2.LatLng(40.9994416,-75.1733226),
-    'Sycamore Suites' : ll2.LatLng(40.9971008,-75.1717411),
-    'Dansbury Commons' : ll2.LatLng(40.9970549,-75.174138),
-    'Monroe Hall' : ll2.LatLng(40.9950679,-75.1731268),
-    'Koehler Fieldhouse and Natatorium' : ll2.LatLng(40.9970549,-75.1711553),
-    'Kemp Library' : ll2.LatLng(40.998535,-75.1705461),
-    'Warren E. & Sandra Hoeffner Science and Technology Center' : ll2.LatLng(40.9965026,-75.1761235),
-    'Moore Biology Hall' : ll2.LatLng(40.9963108,-75.1750235),
+    //entrance of building
+    'Laurel Residence Hall':ll2.LatLng(40.99605,-75.17303),
+    //entrance of building
+    'Shawnee Residence Hall': ll2.LatLng(40.99598,-75.17213),
+    //entrance of building
+    'Minsi Residence Hall': ll2.LatLng(40.99547,-75.17210),
+    //entrance of building
+    'Linden Residence Hall': ll2.LatLng(40.99605, -75.17105),
+    //entrance of building
+    'Hemlock Suites': ll2.LatLng(40.99799,-75.17100),
+    //entrance of building
+    'Lenape Residence Hall': ll2.LatLng(40.99866,-75.17193),
+    //entrance of building
+    'Hawthorn Suites' : ll2.LatLng(40.99908,-75.17233),
+    //entrance of building
+    'Sycamore Suites' : ll2.LatLng(40.99721,-75.17246),
+    //entrance of building
+    'Dansbury Commons' : ll2.LatLng(40.99671,-75.17351),
+    //entrance of building
+    'Monroe Hall' : ll2.LatLng(40.99525,-75.17283),
+    //entrance of building
+    'Koehler Fieldhouse and Natatorium' : ll2.LatLng(40.99710,-75.16993),
+    //entrance of building
+    'Kemp Library' : ll2.LatLng(40.99830,-75.17031),
+    //entrance of building
+    'Warren E. & Sandra Hoeffner Science and Technology Center' : ll2.LatLng(40.996636,-75.17557),
+    //entrance of building
+    'Moore Biology Hall' : ll2.LatLng(40.99631,-75.17498),
+    //entrance of building
     'Gessner Science Hall' : ll2.LatLng(40.9959637,-75.1748588),
-    'Stroud Hall' : ll2.LatLng(40.9957886,-75.1746249),
-    'DeNike Center for Human Services' : ll2.LatLng(40.9936593,-75.1764988),
-    'Fine and Performing Arts Center' : ll2.LatLng(40.9987711,-75.1665964),
-    'Zimbar-Liljenstein Hall' : ll2.LatLng(40.9938668,-75.1739783),
+    //entrance of building
+    'Stroud Hall' : ll2.LatLng(40.99530,-75.17441),
+    //entrance of building
+    'DeNike Center for Human Services' : ll2.LatLng(40.99413,-75.17611),
+    //entrance of building
+    'Fine and Performing Arts Center' : ll2.LatLng(40.99855,-75.16642),
+    //entrance of building
+    'Zimbar-Liljenstein Hall' : ll2.LatLng(40.99413,-75.17380),
+    //entrance of field (change this one?)
     'Eiler-Martin Stadium' : ll2.LatLng(40.9940069,-75.1728448),
+    //this one seems fine
     'Dave Carllyon Pavilion' : ll2.LatLng(40.9985246,-75.1728687),
-    'Mattioli Recreation Center' : ll2.LatLng(40.995681,-75.1699969),
+    //entrance of building
+    'Mattioli Recreation Center' : ll2.LatLng(40.99546,-75.17034),
+    //unchanged
     'Joseph H. & Mildred E. Beers Lecture Hall' : ll2.LatLng(40.9954604,-75.1750394),
-    'Reibman Administration Building' : ll2.LatLng(40.9958995,-75.1770572),
-    'Conference Services & Multicultural House' : ll2.LatLng(40.9957553,-75.1764082),
-    'Abeloff Center for the Performing Arts' : ll2.LatLng(40.9944137,-75.1753685),
-    'Rosenkrans Hall' : ll2.LatLng(40.9948232,-75.1749201),
-    'University Center' : ll2.LatLng(40.9956658,-75.1739196),
+    //entrance of builing
+    'Reibman Administration Building' : ll2.LatLng(40.99564,-75.17683),
+    //entrance of building
+    'Conference Services & Multicultural House' : ll2.LatLng(40.99587,-75.17637),
+    //entrance of building
+    'Abeloff Center for the Performing Arts' : ll2.LatLng(40.99453,-75.17533),
+    //entrance of building
+    'Rosenkrans Hall' : ll2.LatLng(40.99494,-75.17467),
+    //iffy on where to add entrance
+    'University Center' : ll2.LatLng(40.99604,-75.17384),
+    //unchanged
     'Henry A. Ahnert Jr. Alumni Center' :  ll2.LatLng(40.9996531,-75.1713405),
   };
 
