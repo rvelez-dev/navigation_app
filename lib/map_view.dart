@@ -91,6 +91,9 @@ class _MapViewState extends State<MapView> {
   List<ll2.LatLng> _routePolyline = [];
   bool _isGraphLoaded = false;
 
+  //state variable for time of distance
+  String _walkingTimeEstimate = "";
+
   bool _showBlueDot = false;
   bool _useCurrentLocation = false;
   bool _autoCenter = true;
@@ -113,8 +116,7 @@ class _MapViewState extends State<MapView> {
   void initState() {
     super.initState();
     _initializeAsync();
-    //_initializeRouting();
-    //_requestLocationPermissionAndCenter();
+
   }
 
   @override
@@ -283,6 +285,29 @@ class _MapViewState extends State<MapView> {
       }
     });*/
   //
+
+  //returns walking distance
+  String _getWalkingTimeEstimate(List<ll2.LatLng> route) {
+    if (route.isEmpty || route.length < 2) return "";
+
+    final ll2.Distance distCalc = const ll2.Distance();
+    double totalMeters = 0;
+
+    for (int i = 0; i < route.length - 1; i++) {
+      totalMeters += distCalc.as(
+        ll2.LengthUnit.Meter,
+        route[i],
+        route[i + 1],
+      );
+    }
+
+    // Average walking speed: 1.4 m/s (~5 km/h)
+    final int seconds = (totalMeters / 1.4).round();
+    final int minutes = (seconds / 60).ceil();
+
+    if (minutes < 1) return "< 1 min walk";
+    return "~$minutes min walk • ${(totalMeters).round()} m";
+  }
 
   Future<bool> _handleLocationPermission() async {
     bool serviceEnabled = await _location.serviceEnabled();
@@ -675,6 +700,7 @@ class _MapViewState extends State<MapView> {
     if(mounted){
       setState(() {
         _routePolyline = path;
+        _walkingTimeEstimate = _getWalkingTimeEstimate(path);
       });
     }
 
@@ -997,11 +1023,44 @@ class _MapViewState extends State<MapView> {
                           const SizedBox(height: 15),
 
                           // The Route Button (Hides when routing starts)
-                          if (!_isRouting)
+                          //adding walking time estimate
+                          if (!_isRouting && _walkingTimeEstimate.isNotEmpty)
+                            Row(
+                              children:[
+                                const Icon(Icons.directions_walk, size: 18, color: Colors.blue),
+                                const SizedBox(width:6),
+                                Text(
+                                _walkingTimeEstimate,
+                                style: const TextStyle(
+                                fontSize: 15,
+                                color: Colors.blue,
+                                fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          )
+                          else if(!_isRouting)
+                            Row(
+                              children: [
+                                Icon(Icons.directions_walk, size: 18, color: Colors.grey [400]),
+                                const SizedBox(width: 6),
+                                Text(
+                                  "Tap \"Start Route\" to see walk time",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[400],
+                                    fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          const SizedBox(height: 15),
+                          //route button (hides when routing starts)
+                          if(!_isRouting)
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton.icon(
-                                onPressed: _startRouting, // Triggers our new function
+                                onPressed: _startRouting,
                                 icon: const Icon(Icons.directions_walk),
                                 label: const Text("Start Route", style: TextStyle(fontSize: 18)),
                                 style: ElevatedButton.styleFrom(
@@ -1012,7 +1071,19 @@ class _MapViewState extends State<MapView> {
                               ),
                             )
                           else
-                            const Text("Navigating...", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16)),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Navigating...",
+                                  style: TextStyle(
+                                    color:Colors.green,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
 
                           // Future Live Events Section Placeholder
                           const SizedBox(height: 30),
