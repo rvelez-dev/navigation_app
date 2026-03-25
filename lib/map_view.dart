@@ -559,6 +559,48 @@ class _MapViewState extends State<MapView> {
       debugPrint("error in _addLabelsLayer: $e");
     }
   }
+
+  //adding grass layer to app
+  Future <void> _addGrassLayer() async {
+
+    if(mapController == null ) return;
+
+    try{
+
+      //loading grass geojson
+      final String grassJSON = await rootBundle.loadString(
+        'assets/esu_jsons/grass.geojson',
+      );
+      debugPrint("Grass GeoJson preview: ${grassJSON.substring(0,100)}");
+      //register the geoJSON data as a source with mapLibre
+      await mapController!.addSource(
+          "grass-source",
+          GeojsonSourceProperties(data: grassJSON),
+      );
+      //confirm source was registered
+      final sources = await mapController!.getSourceIds();
+      debugPrint("All sources after adding grass: $sources");
+
+      //drawing layer
+      await mapController!.addFillLayer(
+          "grass-source",
+          "grass-layer",
+      const FillLayerProperties(
+        fillColor: "#FF0000",
+        fillOpacity: 0.9,
+      ),
+        //adding below all layers
+        //belowLayerId: "road-path"
+      );
+      final layers = await mapController!.getLayerIds();
+      debugPrint("all layers after adding grass: $layers");
+      debugPrint("full layer list: $layers");
+      //debugPrint("Grass GeoJSON preview: ${grassJSON.substring(0, 300)}");
+      debugPrint("Grass layer added successfully");
+    }catch (e){
+      debugPrint("Error adding grass later: $e");
+    }
+  }
       //debugPrint("Label layer command sent.");
 
       /* 3. confirming layer existence
@@ -836,6 +878,10 @@ class _MapViewState extends State<MapView> {
   void _onStyleLoaded() async {
     //debugPrint("Debug: making layers and buildings, onstyleloaded called");
 
+    //debugging to see why grass layers are not loading
+    final layers = await mapController!.getLayerIds();
+    debugPrint("All map layers: $layers");
+
     await _addImageFromAsset("warrior_logo", "assets/images/esu_warrior_logo.png");
     await _addImageFromAsset("info_icon", "assets/images/info_icon.png");
 
@@ -848,6 +894,8 @@ class _MapViewState extends State<MapView> {
        _addLabelsLayer(),
       // 3. add the source data for routing
        _addRouteSource(),
+        //4. adding grass layer
+        _addGrassLayer(),
       ]);
     }catch (e){
       debugPrint("Error during layer initialization: $e");
