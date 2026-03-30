@@ -8,6 +8,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'dart:async';
 import 'dart:typed_data'; // Required for Uint8List
 import 'package:flutter/foundation.dart'; // for compute()
+import 'dart:convert';
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -110,6 +111,12 @@ class _MapViewState extends State<MapView> {
   Timer? _locationUpdateTimer;
   Timer? _routeUpdateTimer;
   StreamSubscription<LocationData>? _locationSubscription;
+  bool _isAddingRoute = false;
+
+  //manage route display
+  Timer?  _animationTimer;
+  double  _dashOffset = 0;
+  bool    _routeLayerExists = false;
 
 
   @override
@@ -125,6 +132,7 @@ class _MapViewState extends State<MapView> {
     _locationUpdateTimer?.cancel();
     _routeUpdateTimer?.cancel();
     _locationSubscription?.cancel();
+    _animationTimer?.cancel();
     super.dispose();
   }
 
@@ -390,7 +398,6 @@ class _MapViewState extends State<MapView> {
           _endPoint = newEnd;
         });
       }
-    //_drawMarkers(); // Updates the green/red dots
     if (_startPoint != null && _endPoint != null) {
       debugPrint("Debug: _onMapTap: drawing path from $_startPoint to $_endPoint");
       _makePath(_startPoint!, _endPoint!); // Updates the route line
@@ -573,10 +580,13 @@ class _MapViewState extends State<MapView> {
       );
       debugPrint("Grass GeoJson preview: ${grassJSON.substring(0,100)}");
       //register the geoJSON data as a source with mapLibre
-      await mapController!.addSource(
+      /*await mapController!.addSource(
           "grass-source",
           GeojsonSourceProperties(data: grassJSON),
-      );
+      );*/
+      //convert json string data into map so maplibre understands it
+      final Map<String, dynamic> grassData = json.decode(grassJSON); // ✅ now a real Map
+      await mapController!.addSource("grass-source", GeojsonSourceProperties(data: grassData));
       //confirm source was registered
       final sources = await mapController!.getSourceIds();
       debugPrint("All sources after adding grass: $sources");
@@ -586,8 +596,9 @@ class _MapViewState extends State<MapView> {
           "grass-source",
           "grass-layer",
       const FillLayerProperties(
-        fillColor: "#FF0000",
-        fillOpacity: 0.9,
+        fillColor: "#00FF00",
+        fillOpacity: 0.3,
+
       ),
         //adding below all layers
         //belowLayerId: "road-path"
@@ -619,7 +630,7 @@ class _MapViewState extends State<MapView> {
 
   //allows routing to work properly by adding the data of the walkways to the mapcontroller as a layer
   //routing basically reveals parts of this layer necessary to make the path
-  Future<void> _addRouteSource() async {
+  /*Future<void> _addRouteSource() async {
     debugPrint("Debug: setupMapLayers entered");
     if (mapController == null) return;
 
@@ -638,9 +649,135 @@ class _MapViewState extends State<MapView> {
         lineCap: "round",
       ),
     );
-  }
+  }*/
   // This actually talks to the MapLibre engine to visualize the path from _makePath
+  //new animated version
   Future<void> addRouteLayer(List<ll2.LatLng> points) async {
+    if (mapController == null || points.isEmpty) return;
+    if(_isAddingRoute){return;}
+    _isAddingRoute = true;
+
+    // Stop any animation that was running for a previous route
+    _stopRouteAnimation();
+
+    try { await mapController!.removeLayer("animated-route"); } catch (e) {debugPrint("addRouteLayer: Error removing animated-route layer: $e");}
+    try { await mapController!.removeLayer("route-layer"); } catch (e) {debugPrint("addRouteLayer: Error removing route-layer layer: $e");}
+    try { await mapController!.removeSource("route-source"); } catch (e) {debugPrint("addRouteLayer: Error removing route-source layer: $e");}
+    await mapController!.clearLines();
+
+    // Convert your LatLng list into a GeoJSON LineString feature.
+    // GeoJSON wants [longitude, latitude] — the opposite of how you store them!
+    final List<List<double>> coords = points
+        .map((p) => [p.longitude, p.latitude])
+        .toList();
+
+    final Map<String, dynamic> geojson = {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "LineString",
+            "coordinates": coords,
+          }
+        }
+      ]
+    };
+
+    try {
+      // ── Remove old layer/source if they exist ─────────────────────────────
+      // We track _routeLayerExists ourselves because querying the map is async
+      // and can race with the add calls below.
+      if (_routeLayerExists) {
+        try { await mapController!.removeLayer("animated-route"); } catch (_) {}
+        try { await mapController!.removeSource("route-source"); } catch (_) {}
+        _routeLayerExists = false;
+      }
+
+      // Also clear any old addLine() lines from the previous static approach
+      await mapController!.clearLines();
+
+      // ── Add the GeoJSON source ─────────────────────────────────────────────
+      // A "source" is just the data. A "layer" is how it looks.
+      // Separating them lets us update the style (dasharray) without
+      // touching the geometry data.
+      await mapController!.addSource(
+        "route-source",
+        GeojsonSourceProperties(data: geojson),
+      );
+
+      // ── Add the line layer ─────────────────────────────────────────────────
+      // lineDasharray: [dash length, gap length] in "line-width units"
+      // We start with [2, 2] — equal dashes and gaps — and shift these
+      // values in the timer to create motion.
+      await mapController!.addLayer(
+        "route-source",
+        "animated-route",
+        LineLayerProperties(
+          lineColor: "#FF0000",       // your existing ESU red
+          lineWidth: 5.0,             // slightly thicker so dashes are visible
+          lineOpacity: 0.9,
+          lineCap: "round",           // rounded ends on each dash segment
+          lineJoin: "round",
+          lineDasharray: [2, 2],      // initial dash pattern — we'll animate this
+        ),
+      );
+
+      _routeLayerExists = true;
+
+      // ── Start the animation loop ───────────────────────────────────────────
+      _startRouteAnimation();
+
+    } catch (e) {
+      debugPrint("Caught map error in addRouteLayer: $e");
+    }
+    finally {
+      _isAddingRoute = false;
+    }
+  }
+
+  void _startRouteAnimation() {
+    // Each tick shifts the dash pattern by 0.5 units.
+    // The pattern repeats every (dash + gap) = 4 units, so the "loop"
+    // completes every 8 ticks (400 ms) — a comfortable walking-pace feel.
+    //
+    // To make it faster: increase the step (e.g. 1.0) or shorten the interval.
+    // To make it slower: decrease the step (e.g. 0.25) or lengthen the interval.
+    _animationTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+      if (!mounted || mapController == null || !_routeLayerExists) return;
+
+      _dashOffset = (_dashOffset + 0.5) % 4.0; // wrap at (dash+gap) total
+
+      // lineDasharray trick:
+      //   [tiny, offset, dash, gap] is a 4-element array where:
+      //     element 0  = invisible start segment (we use this to shift phase)
+      //     element 1  = the gap before the first visible dash
+      //     element 2  = the visible dash
+      //     element 3  = the gap after the dash
+      //
+      // By increasing element 0 and decreasing element 1 by the same amount,
+      // the visible pattern shifts forward without changing the overall rhythm.
+      //
+      // _dashOffset goes 0 → 0.5 → 1.0 → ... → 3.5 → 0.0 → ...
+      // so the dash appears to march continuously along the path.
+      final double t = _dashOffset;
+      mapController!.setLayerProperties(
+        "animated-route",
+        LineLayerProperties(
+          lineDasharray: [t, 4.0 - t, 2.0, 2.0],
+        ),
+      );
+    });
+  }
+
+  void _stopRouteAnimation() {
+    _animationTimer?.cancel();
+    _animationTimer = null;
+    // Note: we don't reset _dashOffset here so that if the route is
+    // redrawn it picks up smoothly rather than jumping back to 0.
+  }
+  //old version
+  /*Future<void> addRouteLayer(List<ll2.LatLng> points) async {
     if (mapController == null || points.isEmpty) return;
 
     //convert points to maplibre verison of LatLng
@@ -661,7 +798,7 @@ class _MapViewState extends State<MapView> {
     } catch (e) {
       debugPrint("Caught map error: $e");
     }
-  }
+  }*/
 
 
   Future<void> _addDestinationMarker(ll2.LatLng location) async {
@@ -689,11 +826,6 @@ class _MapViewState extends State<MapView> {
     } catch (e) {
       debugPrint("Error removing destination source: $e");
     }
-
-    // Now safely add fresh source and layers
-    // OLD 1. Remove old marker layer if it exists
-    //try { await mapController?.removeLayer("destination-pin"); } catch (e) {}
-    //try { await mapController?.removeSource("destination-source"); } catch (e) {}
 
     // 2. Add a GeoJSON source for the single point
     await mapController?.addSource("destination-source", GeojsonSourceProperties(
@@ -892,8 +1024,10 @@ class _MapViewState extends State<MapView> {
       _add3DBuildingsLayer(),
       // 2. create layers for the user, route, and blue dot
        _addLabelsLayer(),
+      // 3. add the source data for routing NOT ANYMORE!
+       //_addRouteSource(),
       // 3. add the source data for routing
-       _addRouteSource(),
+       //_addRouteSource(),
         //4. adding grass layer
         _addGrassLayer(),
       ]);
@@ -936,6 +1070,7 @@ class _MapViewState extends State<MapView> {
 
       // GPS Toggle Button
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: "start_mode_button_fab",
         onPressed: () async {
           if (!_useCurrentLocation) {
             bool hasPermission = await _handleLocationPermission();
@@ -1003,6 +1138,7 @@ class _MapViewState extends State<MapView> {
               bottom: 100, // Above your main FloatingActionButton
               right: 16,
               child: FloatingActionButton(
+                heroTag: "gps_toggle_fab",
                 mini: true,
                 // Blue when following, grey when "free look"
                 backgroundColor: _autoCenter ? Colors.blue : Colors.white,
