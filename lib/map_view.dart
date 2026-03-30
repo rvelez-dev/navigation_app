@@ -1021,6 +1021,7 @@ class _MapViewState extends State<MapView> {
        _addLabelsLayer(),
       // 3. add the source data for routing NOT ANYMORE!
        //_addRouteSource(),
+      // 3. add the source data for routing
        _addRouteSource(),
         //4. adding grass layer
         _addGrassLayer(),
