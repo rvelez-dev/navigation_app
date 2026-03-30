@@ -8,6 +8,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'dart:async';
 import 'dart:typed_data'; // Required for Uint8List
 import 'package:flutter/foundation.dart'; // for compute()
+import 'dart:convert';
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -579,10 +580,13 @@ class _MapViewState extends State<MapView> {
       );
       debugPrint("Grass GeoJson preview: ${grassJSON.substring(0,100)}");
       //register the geoJSON data as a source with mapLibre
-      await mapController!.addSource(
+      /*await mapController!.addSource(
           "grass-source",
           GeojsonSourceProperties(data: grassJSON),
-      );
+      );*/
+      //convert json string data into map so maplibre understands it
+      final Map<String, dynamic> grassData = json.decode(grassJSON); // ✅ now a real Map
+      await mapController!.addSource("grass-source", GeojsonSourceProperties(data: grassData));
       //confirm source was registered
       final sources = await mapController!.getSourceIds();
       debugPrint("All sources after adding grass: $sources");
@@ -592,8 +596,9 @@ class _MapViewState extends State<MapView> {
           "grass-source",
           "grass-layer",
       const FillLayerProperties(
-        fillColor: "#FF0000",
-        fillOpacity: 0.9,
+        fillColor: "#00FF00",
+        fillOpacity: 0.3,
+
       ),
         //adding below all layers
         //belowLayerId: "road-path"
@@ -1022,7 +1027,7 @@ class _MapViewState extends State<MapView> {
       // 3. add the source data for routing NOT ANYMORE!
        //_addRouteSource(),
       // 3. add the source data for routing
-       _addRouteSource(),
+       //_addRouteSource(),
         //4. adding grass layer
         _addGrassLayer(),
       ]);
