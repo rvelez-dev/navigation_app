@@ -1135,10 +1135,389 @@ class _MapViewState extends State<MapView> {
 
                           // Future Live Events Section Placeholder
                           const SizedBox(height: 30),
-                          const Text("Events Today", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const Text("About This Building", style:TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black,    // shadow color
+                                offset: Offset(0, 0),   // (horizontal, vertical) shift
+                                blurRadius: 4,          // how blurry/spread out it is
+                              ),
+                            ],
+                          )
+                          ),
+                          // Info of all buildings outputted to user
                           const Divider(),
+                          //switch case for buildings
+                          switch (_selectedDestinationName){
+                            //Residence Halls
+                            'Laurel Residence Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Residence Hall",
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      )),
+                                SizedBox(height: 10),
+                                Text("Ground Floor: add text",
+                                    style:TextStyle(fontSize: 15,
+                                    fontWeight: FontWeight.w500)),
+                                Text("First Floor: Room 203",
+                                    style:TextStyle(fontSize: 15,
+                                    fontWeight: FontWeight.w500)),
+                                Text("Second Floor: Room 305"),
+                                Text("Third Floor: Room 305"),
+                              ],
+                            ),
+                            'Shawnee Residence Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the resources for students", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 10),
+                                Text("Writing Studio located on 1st floor"),
+                                Text("Warrior Tutoring Center located on 1st floor"),
+                                Text("Study Rooms, School supplies, and rentals available upon request"),
+                              ],
+                            ),
+                            'Minsi Residence Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("🏛️ Monroe Hall", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 8),
+                                Text("📋 Info goes here"),
+                              ],
+                            ),
+                            'Linden Residence Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the STEM Courses",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    )),
+                                SizedBox(height: 10),
+                                Text("Ground Floor: add text",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("First Floor: Room 203",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("Second Floor: Room 305"),
+                                Text("Third Floor: Room 305"),
+                              ],
+                            ),
+                            'Hemlock Residence Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the resources for students", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 10),
+                                Text("Writing Studio located on 1st floor"),
+                                Text("Warrior Tutoring Center located on 1st floor"),
+                                Text("Study Rooms, School supplies, and rentals available upon request"),
+                              ],
+                            ),
+                            'Lenape Residence Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("🏛️ Monroe Hall", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 8),
+                                Text("📋 Info goes here"),
+                              ],
+                            ),
+                            'Hawthorn Suites' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the STEM Courses",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    )),
+                                SizedBox(height: 10),
+                                Text("Ground Floor: add text",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("First Floor: Room 203",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("Second Floor: Room 305"),
+                                Text("Third Floor: Room 305"),
+                              ],
+                            ),
+                            'Sycamore Suites' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the resources for students", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 10),
+                                Text("Writing Studio located on 1st floor"),
+                                Text("Warrior Tutoring Center located on 1st floor"),
+                                Text("Study Rooms, School supplies, and rentals available upon request"),
+                              ],
+                            ),
+                          //End of residents hall
+                            'Mattioli Recreation Center' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Mattioli Rec Center offers a variety of fitness events ranging from ", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 8),
+                                Text("Hours: "
+                                    "Monday "),
+                              ],
+                            ),
+                            'Joseph H. & Mildred E. Beers Lecture Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the STEM Courses",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    )),
+                                SizedBox(height: 10),
+                                Text("Ground Floor: add text",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("First Floor: Room 203",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("Second Floor: Room 305"),
+                                Text("Third Floor: Room 305"),
+                              ],
+                            ),
+                            'Reibman Administration Building' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the resources for students", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 10),
+                                Text("Writing Studio located on 1st floor"),
+                                Text("Warrior Tutoring Center located on 1st floor"),
+                                Text("Study Rooms, School supplies, and rentals available upon request"),
+                              ],
+                            ),
+                            'Conference Services & Multicultural House' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("🏛️ Monroe Hall", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 8),
+                                Text("📋 Info goes here"),
+                              ],
+                            ),
+                            'Abeloff Center for the Performing Arts' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the STEM Courses",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    )),
+                                SizedBox(height: 10),
+                                Text("Ground Floor: add text",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("First Floor: Room 203",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("Second Floor: Room 305"),
+                                Text("Third Floor: Room 305"),
+                              ],
+                            ),
+                            'Rosenkrans Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the resources for students", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 10),
+                                Text("Writing Studio located on 1st floor"),
+                                Text("Warrior Tutoring Center located on 1st floor"),
+                                Text("Study Rooms, School supplies, and rentals available upon request"),
+                              ],
+                            ),
+                            'University Center' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("🏛️ Monroe Hall", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 8),
+                                Text("📋 Info goes here"),
+                              ],
+                            ),
+                          // Add every building from your allLocations map here...
+                            'Henry A. Ahnert Jr. Alumni Center' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the STEM Courses",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    )),
+                                SizedBox(height: 10),
+                                Text("Ground Floor: add text",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("First Floor: Room 203",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("Second Floor: Room 305"),
+                                Text("Third Floor: Room 305"),
+                              ],
+                            ),
+                            'Monroe Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the resources for students", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 10),
+                                Text("Writing Studio located on 1st floor"),
+                                Text("Warrior Tutoring Center located on 1st floor"),
+                                Text("Study Rooms, School supplies, and rentals available upon request"),
+                              ],
+                            ),
+                            'Koehler Fieldhouse and Natatorium' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("🏛️ Monroe Hall", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 8),
+                                Text("📋 Info goes here"),
+                              ],
+                            ),
+                          // Add every building from your allLocations map here...
+                            'Kemp Library' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the STEM Courses",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    )),
+                                SizedBox(height: 10),
+                                Text("Ground Floor: add text",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("First Floor: Room 203",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("Second Floor: Room 305"),
+                                Text("Third Floor: Room 305"),
+                              ],
+                            ),
+                            'Warren E. & Sandra Hoeffner Science and Technology Center' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the resources for students", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 10),
+                                Text("Writing Studio located on 1st floor"),
+                                Text("Warrior Tutoring Center located on 1st floor"),
+                                Text("Study Rooms, School supplies, and rentals available upon request"),
+                              ],
+                            ),
+                            'Moore Biology Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("🏛️ Monroe Hall", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 8),
+                                Text("📋 Info goes here"),
+                              ],
+                            ),
+                            'Gessner Science Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the STEM Courses",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    )),
+                                SizedBox(height: 10),
+                                Text("Ground Floor: add text",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("First Floor: Room 203",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("Second Floor: Room 305"),
+                                Text("Third Floor: Room 305"),
+                              ],
+                            ),
+                            'Stroud Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the resources for students", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 10),
+                                Text("Writing Studio located on 1st floor"),
+                                Text("Warrior Tutoring Center located on 1st floor"),
+                                Text("Study Rooms, School supplies, and rentals available upon request"),
+                              ],
+                            ),
+                            'DeNike Center for Human Services' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("🏛️ Monroe Hall", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 8),
+                                Text("📋 Info goes here"),
+                              ],
+                            ),
+                            'Fine and Performing Arts Center' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the STEM Courses",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    )),
+                                SizedBox(height: 10),
+                                Text("Ground Floor: add text",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("First Floor: Room 203",
+                                    style:TextStyle(fontSize: 15,
+                                        fontWeight: FontWeight.w500)),
+                                Text("Second Floor: Room 305"),
+                                Text("Third Floor: Room 305"),
+                              ],
+                            ),
+                            'Zimbar-Liljenstein Hall' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the resources for students", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 10),
+                                Text("Writing Studio located on 1st floor"),
+                                Text("Warrior Tutoring Center located on 1st floor"),
+                                Text("Study Rooms, School supplies, and rentals available upon request"),
+                              ],
+                            ),
+                            'Dansbury Commons' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("🏛️ Monroe Hall", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 8),
+                                Text("📋 Info goes here"),
+                              ],
+                            ),
+                            'Eiler-Martin Stadium' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Home of the resources for students", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 10),
+                                Text("Writing Studio located on 1st floor"),
+                                Text("Warrior Tutoring Center located on 1st floor"),
+                                Text("Study Rooms, School supplies, and rentals available upon request"),
+                              ],
+                            ),
+                            'Dave Carllyon Pavilion' => const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("🏛️ Monroe Hall", style: TextStyle(fontWeight: FontWeight.bold)),
+                                SizedBox(height: 8),
+                                Text("📋 Info goes here"),
+                              ],
+                            ),
+
+                          // Add every building from your allLocations map here...
+                            _ => const Text("ℹ️ No details available for this location yet."),
+                          },
+
+
+                          //const Text("Events Today", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          //const Divider(),
                           // Your StreamBuilder will go here later
-                          const Text("No events scheduled for this location today."),
+                          //const Text("No events scheduled for this location today."),
                         ],
                       ),
                     ),
