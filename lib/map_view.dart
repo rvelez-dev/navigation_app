@@ -1020,16 +1020,12 @@ class _MapViewState extends State<MapView> {
     //add all layers concurrently instead of sequentially
     try {
       await Future.wait([
-        // 1. Add 3D buildings
-      _add3DBuildingsLayer(),
-      // 2. create layers for the user, route, and blue dot
-       _addLabelsLayer(),
-      // 3. add the source data for routing NOT ANYMORE!
-       //_addRouteSource(),
-      // 3. add the source data for routing
-       //_addRouteSource(),
-        //4. adding grass layer
+        //2. adding grass layer
         _addGrassLayer(),
+        // 2. Add 3D buildings
+      _add3DBuildingsLayer(),
+      // 3. create layers for the user, route, and blue dot
+       _addLabelsLayer(),
       ]);
     }catch (e){
       debugPrint("Error during layer initialization: $e");
@@ -1075,6 +1071,20 @@ class _MapViewState extends State<MapView> {
           if (!_useCurrentLocation) {
             bool hasPermission = await _handleLocationPermission();
             if (!hasPermission) return;
+            // Only fetch when turning GPS ON, with a timeout so it can't hang forever
+            try {
+              debugPrint("Trying to get fresh location...");
+              final LocationData fresh = await _location.getLocation()
+                  .timeout(const Duration(seconds: 3)); // ← key addition
+              if (fresh.latitude != null && mounted) {
+                _currentUserLocation = ll2.LatLng(fresh.latitude!, fresh.longitude!);
+                debugPrint("Got fresh location: $_currentUserLocation");
+              }
+            } catch (e) {
+              // Timeout or error — not a blocker, _currentUserLocation may already be set
+              // from the passive listener, so we continue anyway
+              debugPrint("Fresh location fetch skipped: $e");
+            }
           }
           if(mounted) {
             setState(() {
