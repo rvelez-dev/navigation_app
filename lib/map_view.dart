@@ -110,6 +110,7 @@ class _MapViewState extends State<MapView> {
   //Debounce timers to prevent excessive setState calls
   Timer? _locationUpdateTimer;
   Timer? _routeUpdateTimer;
+  Timer? _rerouteTimer;
   StreamSubscription<LocationData>? _locationSubscription;
   bool _isAddingRoute = false;
 
@@ -133,6 +134,7 @@ class _MapViewState extends State<MapView> {
     _routeUpdateTimer?.cancel();
     _locationSubscription?.cancel();
     _animationTimer?.cancel();
+    _rerouteTimer?.cancel();
     super.dispose();
   }
 
@@ -269,6 +271,21 @@ class _MapViewState extends State<MapView> {
     });
   }
 
+  void _startRerouteTimer() {
+    _rerouteTimer?.cancel();
+    _rerouteTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (!_isRouting || !_useCurrentLocation) return;
+      if (_currentUserLocation == null || _endPoint == null) return;
+      debugPrint("Reroute tick — redrawing from current location");
+      _startPoint = _currentUserLocation;
+      _makePath(_startPoint!, _endPoint!);
+    });
+  }
+
+  void _stopRerouteTimer() {
+    _rerouteTimer?.cancel();
+    _rerouteTimer = null;
+  }
     //location updates and recenter if needed
    /* _location.onLocationChanged.listen((LocationData newLoc){
       if(newLoc.latitude != null && newLoc.longitude != null){
@@ -782,6 +799,7 @@ class _MapViewState extends State<MapView> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+    _startRerouteTimer();
   }
 
   Future<void> _updateRouteGeometry(List<ll2.LatLng> points) async {
@@ -894,6 +912,7 @@ class _MapViewState extends State<MapView> {
       _isRouting = false; // Reset to false when a new place is picked
       _routePolyline = []; // Clear the old route data
     });
+    _stopRerouteTimer();
 
     // Clear old route lines from the map visually
     if (mapController != null) {
@@ -926,8 +945,6 @@ class _MapViewState extends State<MapView> {
     final Uint8List list = bytes.buffer.asUint8List();
     return mapController?.addImage(name, list);
   }
-
-
 
   void _onStyleLoaded() async {
     //debugPrint("Debug: making layers and buildings, onstyleloaded called");
