@@ -596,12 +596,12 @@ class _MapViewState extends State<MapView> {
           "grass-source",
           "grass-layer",
       const FillLayerProperties(
-        fillColor: "#00FF00",
-        fillOpacity: 0.3,
+        fillColor: "#BEE7A5",
+        fillOpacity: 0.5,
 
       ),
         //adding below all layers
-        //belowLayerId: "road-path"
+        belowLayerId: "building"
       );
       final layers = await mapController!.getLayerIds();
       debugPrint("all layers after adding grass: $layers");
