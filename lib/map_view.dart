@@ -455,7 +455,7 @@ class _MapViewState extends State<MapView> {
         "3d-buildings", // A unique ID we give to this new 3D layer
         FillExtrusionLayerProperties(
           // Color of the buildings
-          fillExtrusionColor: '#808080',
+          fillExtrusionColor: '#F0EBE1',
           // 'render_height' is the property in OSM data that tells us how tall it is
           fillExtrusionHeight: ["*", ["get", "render_height"], 1.5],
           fillExtrusionBase: ["get", "render_min_height"],
