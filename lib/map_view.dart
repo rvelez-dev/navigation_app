@@ -580,12 +580,8 @@ class _MapViewState extends State<MapView> {
       );
       debugPrint("Grass GeoJson preview: ${grassJSON.substring(0,100)}");
       //register the geoJSON data as a source with mapLibre
-      /*await mapController!.addSource(
-          "grass-source",
-          GeojsonSourceProperties(data: grassJSON),
-      );*/
       //convert json string data into map so maplibre understands it
-      final Map<String, dynamic> grassData = json.decode(grassJSON); // ✅ now a real Map
+      final Map<String, dynamic> grassData = json.decode(grassJSON); // now a real Map
       await mapController!.addSource("grass-source", GeojsonSourceProperties(data: grassData));
       //confirm source was registered
       final sources = await mapController!.getSourceIds();
@@ -612,44 +608,27 @@ class _MapViewState extends State<MapView> {
       debugPrint("Error adding grass later: $e");
     }
   }
-      //debugPrint("Label layer command sent.");
 
-      /* 3. confirming layer existence
-      final finalLayers = await mapController!.getLayerIds();
-      if (finalLayers.contains("building-labels-display-layer")) {
-        debugPrint("SUCCESS: 'building-labels-display-layer' is now in the map tree!");
-      } else {
-        debugPrint("FAILURE: Layer still not in map tree. Check native logs (Logcat/Xcode).");
-      }*/
+  //Creates the route points argument for draw route using a given start and end, calls _addRouteLayer
+  void _makePath(ll2.LatLng start, ll2.LatLng end){
+    debugPrint("Debug: Calling routing service");
+    final path = _routingService.getRoute(start, end);
 
-   // } catch (e) {
-     // debugPrint("CRASH in _setupMapLayers: $e");
-   // }
+    if(mounted){
+      setState(() {
+        _routePolyline = path;
+        _walkingTimeEstimate = _getWalkingTimeEstimate(path);
+      });
+    }
+    //addRouteLayer(_routePolyline);//replacing call with _updateRouteGeometry
+    _updateRouteGeometry(_routePolyline);
 
-  //}
-
-  //allows routing to work properly by adding the data of the walkways to the mapcontroller as a layer
-  //routing basically reveals parts of this layer necessary to make the path
-  /*Future<void> _addRouteSource() async {
-    debugPrint("Debug: setupMapLayers entered");
-    if (mapController == null) return;
-
-    // 1. Setup Route Layer (Bottom)
-    // We initialize it with an empty FeatureCollection so it doesn't show yet
-    await mapController!.addSource("route-source", const GeojsonSourceProperties(
-        data: {"type": "FeatureCollection", "features": []}
-    ));
-    await mapController!.addLineLayer(
-      "route-source",
-      "route-layer",
-      const LineLayerProperties(
-        lineColor: '#2196F3', // Red
-        lineWidth: 6.0,
-        lineJoin: "round",
-        lineCap: "round",
-      ),
-    );
-  }*/
+    //print all point in the path
+    /*print("Path points: ");
+    for(int i = 0; i < path.length; i++){
+      print(path[i]);
+    }*/
+  }
   // This actually talks to the MapLibre engine to visualize the path from _makePath
   //new animated version
   Future<void> addRouteLayer(List<ll2.LatLng> points) async {
@@ -776,30 +755,65 @@ class _MapViewState extends State<MapView> {
     // Note: we don't reset _dashOffset here so that if the route is
     // redrawn it picks up smoothly rather than jumping back to 0.
   }
-  //old version
-  /*Future<void> addRouteLayer(List<ll2.LatLng> points) async {
+
+  void _startRouting() {
+    // 1. Ensure we have a start point
+    _startPoint = _useCurrentLocation ? _currentUserLocation : _startPoint;
+
+    if (_startPoint == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Start point not set yet. Waiting for GPS or manual tap.")),
+      );
+      return;
+    }
+
+    // 2. Update state to show we are navigating
+    setState(() {
+      _isRouting = true;
+    });
+
+    // 3. Draw the path and move the camera
+    _makePath(_startPoint!, _endPoint!);
+    _tiltAndRotateCamera(_startPoint!, _endPoint!);
+
+    // 4. Shrink the pull-up menu down to 15% of the screen
+    _sheetController.animateTo(
+      0.15,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Future<void> _updateRouteGeometry(List<ll2.LatLng> points) async {
     if (mapController == null || points.isEmpty) return;
 
-    //convert points to maplibre verison of LatLng
-    final List<LatLng> convertedPoints = points.map((point) => LatLng(point.latitude, point.longitude)).toList();
+    final List<List<double>> coords = points
+        .map((p) => [p.longitude, p.latitude])
+        .toList();
+
+    final Map<String, dynamic> geojson = {
+      "type": "FeatureCollection",
+      "features": [{
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": coords,
+        }
+      }]
+    };
 
     try {
-      // 1. Clear previous attempt to avoid Duplicate ID crash
-      await mapController!.clearLines();
-
-      // 2. Add the new line
-      await mapController!.addLine(
-        LineOptions(
-          geometry: convertedPoints,
-          lineColor: "#FF0000",
-          lineWidth: 4.0,
-        ),
-      );
+      if (_routeLayerExists) {
+        // Just swap the data — layer and animation keep running untouched
+        await mapController!.setGeoJsonSource("route-source", geojson);
+      } else {
+        // First time, do the full build
+        await addRouteLayer(points);
+      }
     } catch (e) {
-      debugPrint("Caught map error: $e");
+      debugPrint("Error updating route geometry: $e");
     }
-  }*/
-
+  }
 
   Future<void> _addDestinationMarker(ll2.LatLng location) async {
     if (mapController == null) return;
@@ -866,72 +880,6 @@ class _MapViewState extends State<MapView> {
   }
 
 
-  //Creates the route points argument for draw route using a given start and end, calls _addRouteLayer
-  void _makePath(ll2.LatLng start, ll2.LatLng end){
-    debugPrint("Debug: Calling routing service");
-    final path = _routingService.getRoute(start, end);
-
-    if(mounted){
-      setState(() {
-        _routePolyline = path;
-        _walkingTimeEstimate = _getWalkingTimeEstimate(path);
-      });
-    }
-
-    //print all point in the path
-    /*print("Path points: ");
-    for(int i = 0; i < path.length; i++){
-      print(path[i]);
-    }*/
-    addRouteLayer(_routePolyline);//new way to draw 3D maplibre path
-  }
-
-  // simple method to handle the users start point and route to users end point from selected option from dropdown menu
-  /*void _handleLocationSelection(String destination){
-    // creating variable endpoint from list of dorm building names
-    final ll2.LatLng? endpoint = allLocations[destination];
-    _startPoint = _currentUserLocation; // re initializing _startpoint to be current user location
-
-    if(endpoint == null){
-      debugPrint('No coordinates found for $destination');
-      return;
-    }
-
-    //set start to user if allowed to prevent a crash
-    if(_useCurrentLocation){
-      if (_currentUserLocation != null) {
-        _startPoint = _currentUserLocation;
-      } else {
-        // GPS is on but we don't have a fix yet
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Waiting for GPS location...")),
-        );
-        return; // Stop here to prevent crash
-      }
-    }
-    //otherwise tell them to make a start point
-    if(_startPoint==null){
-      debugPrint('Start point not set yet.');
-      if(mounted) {
-        //send snackbar message to show user issue
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Start point not set yet")),
-        );
-      }
-      return;
-    }
-    if(mounted) {
-      setState(() {
-        _endPoint =
-            endpoint; // setting the _endpoint to be the value from dormLocations list
-        //_routePolyline = _routingService.getRoute(_startPoint!, _endPoint!); // restating polyline
-      });
-    }
-    // Add the marker to the map
-    _addDestinationMarker(_endPoint!);
-    _makePath(_startPoint!, _endPoint!);//draw path to selection
-    _tiltAndRotateCamera(_startPoint!, _endPoint!);
-  }*/
   void _handleLocationSelection(String destination) {
     final ll2.LatLng? endpoint = allLocations[destination];
 
@@ -979,33 +927,7 @@ class _MapViewState extends State<MapView> {
     return mapController?.addImage(name, list);
   }
 
-  void _startRouting() {
-    // 1. Ensure we have a start point
-    _startPoint = _useCurrentLocation ? _currentUserLocation : _startPoint;
 
-    if (_startPoint == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Start point not set yet. Waiting for GPS or manual tap.")),
-      );
-      return;
-    }
-
-    // 2. Update state to show we are navigating
-    setState(() {
-      _isRouting = true;
-    });
-
-    // 3. Draw the path and move the camera
-    _makePath(_startPoint!, _endPoint!);
-    _tiltAndRotateCamera(_startPoint!, _endPoint!);
-
-    // 4. Shrink the pull-up menu down to 15% of the screen
-    _sheetController.animateTo(
-      0.15,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
 
   void _onStyleLoaded() async {
     //debugPrint("Debug: making layers and buildings, onstyleloaded called");
