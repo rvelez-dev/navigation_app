@@ -18,13 +18,14 @@ class MapView extends StatefulWidget {
 }
 
 class _MapViewState extends State<MapView> {
-  // 1. Create the instance
+  // Create the instance for routing algorithm
   final RoutingService _routingService = RoutingService();
 
   //hosts the map platform and the layers within it
   MapLibreMapController? mapController;
 
   //Creating translation of string location to latlang coordinates
+  //All locations here //can now be phased out as buildings buildingData has this implemented
   static Map<String,ll2.LatLng> allLocations={
     //entrance of building
     'Laurel Residence Hall':ll2.LatLng(40.99605,-75.17303),
@@ -102,6 +103,7 @@ class _MapViewState extends State<MapView> {
 
   String? _selectedDestinationName;
   bool _isRouting = false;
+  //popup menu for building info, starting route,see walking time estimate etc.
   final DraggableScrollableController _sheetController = DraggableScrollableController();
 
   //location package
@@ -114,7 +116,7 @@ class _MapViewState extends State<MapView> {
   StreamSubscription<LocationData>? _locationSubscription;
   bool _isAddingRoute = false;
 
-  //manage route display
+  //manage route animated display
   Timer?  _animationTimer;
   double  _dashOffset = 0;
   bool    _routeLayerExists = false;
@@ -258,6 +260,7 @@ class _MapViewState extends State<MapView> {
   //method to debounce route recalculation
   void _scheduleRouteUpdate(){
     _routeUpdateTimer?.cancel();
+    //every 10 seconds recalculate route
     _routeUpdateTimer = Timer(const Duration(milliseconds: 1000), (){
       if(_startPoint != null && _endPoint != null && mounted){
         final newRoute = _routingService.getRoute(_startPoint!, _endPoint!);
@@ -274,11 +277,17 @@ class _MapViewState extends State<MapView> {
   void _startRerouteTimer() {
     _rerouteTimer?.cancel();
     _rerouteTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (!_isRouting || !_useCurrentLocation) return;
-      if (_currentUserLocation == null || _endPoint == null) return;
-      debugPrint("Reroute tick — redrawing from current location");
+      if (!_isRouting || !_useCurrentLocation) {
+        debugPrint("reroute timer, not rerouting. is routing or not using current location");
+        return;
+      }
+      if (_currentUserLocation == null || _endPoint == null) {
+        debugPrint("reroute timer, current location or end point is null, {userloc: $_currentUserLocation} {endpoint: $_endPoint}");
+        return;
+      }
       _startPoint = _currentUserLocation;
       _makePath(_startPoint!, _endPoint!);
+      debugPrint("Reroute tick — redrawing from current location: $_currentUserLocation to $_endPoint");
     });
   }
 
@@ -286,30 +295,6 @@ class _MapViewState extends State<MapView> {
     _rerouteTimer?.cancel();
     _rerouteTimer = null;
   }
-    //location updates and recenter if needed
-   /* _location.onLocationChanged.listen((LocationData newLoc){
-      if(newLoc.latitude != null && newLoc.longitude != null){
-        _currentUserLocation = ll2.LatLng(newLoc.latitude!, newLoc.longitude!);
-        if(_useCurrentLocation){
-          setState(() {
-            _startPoint = _currentUserLocation;
-            // If they already picked a destination, update the route live as they walk
-            if (_endPoint != null) {
-              _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!);
-            }
-          });
-        }
-        if(_autoCenter){//only continue to recenter if the user wants it
-          mapController?.animateCamera(
-            CameraUpdate.newLatLngZoom(
-              LatLng(newLoc.latitude!, newLoc.longitude!),
-              mapController?.cameraPosition?.zoom ?? 17.0,
-            ),
-          );
-        }
-      }
-    });*/
-  //
 
   //returns walking distance
   String _getWalkingTimeEstimate(List<ll2.LatLng> route) {
@@ -457,6 +442,7 @@ class _MapViewState extends State<MapView> {
   }
 
   //puts 3d buildings on map
+  //NOTE: need to remove demolished computing center from map
   Future <void> _add3DBuildingsLayer() async {
     // Check if the controller is ready
     if (mapController == null) return;
@@ -896,7 +882,6 @@ class _MapViewState extends State<MapView> {
       ),
     );
   }
-
 
   void _handleLocationSelection(String destination) {
     final ll2.LatLng? endpoint = allLocations[destination];
