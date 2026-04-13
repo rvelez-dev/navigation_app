@@ -9,6 +9,8 @@ import 'dart:async';
 import 'dart:typed_data'; // Required for Uint8List
 import 'package:flutter/foundation.dart'; // for compute()
 import 'dart:convert';
+import 'building_info.dart';
+import 'buildings.dart';
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -23,69 +25,6 @@ class _MapViewState extends State<MapView> {
 
   //hosts the map platform and the layers within it
   MapLibreMapController? mapController;
-
-  //Creating translation of string location to latlang coordinates
-  //All locations here //can now be phased out as buildings buildingData has this implemented
-  static Map<String,ll2.LatLng> allLocations={
-    //entrance of building
-    'Laurel Residence Hall':ll2.LatLng(40.99605,-75.17303),
-    //entrance of building
-    'Shawnee Residence Hall': ll2.LatLng(40.99598,-75.17213),
-    //entrance of building
-    'Minsi Residence Hall': ll2.LatLng(40.99547,-75.17210),
-    //entrance of building
-    'Linden Residence Hall': ll2.LatLng(40.99605, -75.17105),
-    //entrance of building
-    'Hemlock Suites': ll2.LatLng(40.99799,-75.17100),
-    //entrance of building
-    'Lenape Residence Hall': ll2.LatLng(40.99866,-75.17193),
-    //entrance of building
-    'Hawthorn Suites' : ll2.LatLng(40.99908,-75.17233),
-    //entrance of building
-    'Sycamore Suites' : ll2.LatLng(40.99721,-75.17246),
-    //entrance of building
-    'Dansbury Commons' : ll2.LatLng(40.99671,-75.17351),
-    //entrance of building
-    'Monroe Hall' : ll2.LatLng(40.99525,-75.17283),
-    //entrance of building
-    'Koehler Fieldhouse and Natatorium' : ll2.LatLng(40.99710,-75.16993),
-    //entrance of building
-    'Kemp Library' : ll2.LatLng(40.99830,-75.17031),
-    //entrance of building
-    'Warren E. & Sandra Hoeffner Science and Technology Center' : ll2.LatLng(40.996636,-75.17557),
-    //entrance of building
-    'Moore Biology Hall' : ll2.LatLng(40.99631,-75.17498),
-    //entrance of building
-    'Gessner Science Hall' : ll2.LatLng(40.9959637,-75.1748588),
-    //entrance of building
-    'Stroud Hall' : ll2.LatLng(40.99530,-75.17441),
-    //entrance of building
-    'DeNike Center for Human Services' : ll2.LatLng(40.99413,-75.17611),
-    //entrance of building
-    'Fine and Performing Arts Center' : ll2.LatLng(40.99855,-75.16642),
-    //entrance of building
-    'Zimbar-Liljenstein Hall' : ll2.LatLng(40.99413,-75.17380),
-    //entrance of field (change this one?)
-    'Eiler-Martin Stadium' : ll2.LatLng(40.9940069,-75.1728448),
-    //this one seems fine
-    'Dave Carllyon Pavilion' : ll2.LatLng(40.9985246,-75.1728687),
-    //entrance of building
-    'Mattioli Recreation Center' : ll2.LatLng(40.99546,-75.17034),
-    //unchanged
-    'Joseph H. & Mildred E. Beers Lecture Hall' : ll2.LatLng(40.9954604,-75.1750394),
-    //entrance of builing
-    'Reibman Administration Building' : ll2.LatLng(40.99564,-75.17683),
-    //entrance of building
-    'Conference Services & Multicultural House' : ll2.LatLng(40.99587,-75.17637),
-    //entrance of building
-    'Abeloff Center for the Performing Arts' : ll2.LatLng(40.99453,-75.17533),
-    //entrance of building
-    'Rosenkrans Hall' : ll2.LatLng(40.99494,-75.17467),
-    //iffy on where to add entrance
-    'University Center' : ll2.LatLng(40.99604,-75.17384),
-    //unchanged
-    'Henry A. Ahnert Jr. Alumni Center' :  ll2.LatLng(40.9996531,-75.1713405),
-  };
 
   // State variables to track navigation
   ll2.LatLng? _startPoint;
@@ -120,7 +59,6 @@ class _MapViewState extends State<MapView> {
   Timer?  _animationTimer;
   double  _dashOffset = 0;
   bool    _routeLayerExists = false;
-
 
   @override
   void initState() {
@@ -406,7 +344,7 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  // This handles the click from MapLibre and converts it for your RoutingService
+  // This handles the click from MapLibre and converts it for RoutingService
   void _handleMapTap(LatLng mapLibrePoint) {
     // Convert MapLibre LatLng to your existing ll2.LatLng format
     final convertedPoint = ll2.LatLng(
@@ -476,6 +414,7 @@ class _MapViewState extends State<MapView> {
   }
 
   //puts directional labels over designated buildings
+  //TODO convert back to geojson and use method learned from fixing grass layer
   static const Map<String,dynamic> _buildingLabelsData = {
     //if (mapController == null) return;
 
@@ -884,7 +823,7 @@ class _MapViewState extends State<MapView> {
   }
 
   void _handleLocationSelection(String destination) {
-    final ll2.LatLng? endpoint = allLocations[destination];
+    final ll2.LatLng? endpoint = buildingData[destination]?.location;
 
     if (endpoint == null) {
       debugPrint('No coordinates found for $destination');
@@ -982,6 +921,33 @@ class _MapViewState extends State<MapView> {
         mapController!.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
       }
     });*/
+
+    /*building info debug check ups
+    // Iterate over all buildings (e.g. to place map markers)
+    buildingData.forEach((name, info) {
+      debugPrint('${info.name} is at ${info.location}');
+    });
+
+    // Check how many buildings you have
+    debugPrint('$buildingData.length');
+     */
+  }
+
+  Widget _buildAboutSection() {
+    if (_selectedDestinationName == null) return const SizedBox.shrink();
+
+    final BuildingInfo? info = buildingData[_selectedDestinationName];
+    if (info == null) return const Text("ℹ️ No details available for this location yet.");
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(info.description, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 10),
+        const Text("Hours:", style: TextStyle(fontWeight: FontWeight.bold)),
+        ...info.formattedHours.map((line) => Text(line)),
+      ],
+    );
   }
 
   @override
@@ -1220,294 +1186,7 @@ class _MapViewState extends State<MapView> {
                           ),
                           // Info of all buildings outputted to user
                           const Divider(),
-                          //switch case for buildings
-                          switch (_selectedDestinationName){
-                            //Residence Halls
-                            'Laurel Residence Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Traditional Style Building",
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      )),
-
-                              ],
-                            ),
-                            'Shawnee Residence Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Traditional Style Building", style: TextStyle(fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            'Minsi Residence Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Traditional Style Building ", style: TextStyle(fontWeight: FontWeight.bold)),
-
-                              ],
-                            ),
-                            'Linden Residence Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Traditional Style Building",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                              ],
-                            ),
-                            'Hemlock Residence Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Suite Style Building", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                Text("ESU Police Department & Parking Services located across Kemp Library"),
-                                Text("ESU Residential Life & Housing located across Sycamore South Wing"),
-
-                              ],
-                            ),
-                            'Lenape Residence Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Traditional Style Building", style: TextStyle(fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            'Hawthorn Suites' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Suite Style Building",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                                SizedBox(height: 10),
-                                Text("Rec B Entrance located outside lower Hawthorn",
-                                    style:TextStyle(fontSize: 15,
-                                        fontWeight: FontWeight.w500)),
-                                Text("Houses House of Sylvia, College of Education, College of Business",
-                                    style:TextStyle(fontSize: 15,
-                                        fontWeight: FontWeight.w500)),
-                              ],
-                            ),
-                            'Sycamore Suites' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Suite Style Building", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                Text("Houses Honors Students, STEM majors,"),
-                              ],
-                            ),
-                          //End of residence hall
-                            'Mattioli Recreation Center' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Mattioli Rec Center offers a variety of fitness events", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                Text("Hours: "),
-                                Text("Monday - Thursday: 6AM - 11PM "),
-                                Text("Friday - Sunday: 11AM - 9PM"),
-                              ],
-                            ),
-                            'Joseph H. & Mildred E. Beers Lecture Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building for classes, speaking, and networking events",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                              ],
-                            ),
-                            'Reibman Administration Building' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building for HR Department, VP offices, and Administration Services", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                // add more info about admissions?
-                              ],
-                            ),
-                            'Conference Services & Multicultural House' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building to host club socials, and many more ", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                // add resources available here
-                              ],
-                            ),
-                            'Abeloff Center for the Performing Arts' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building to host a variety of events for incoming/current students",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                              ],
-                            ),
-                            'Rosenkrans Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building of peer mentoring, classrooms, and more", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                               //can add more info about buildings
-                              ],
-                            ),
-                            'University Center' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Pending Info", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                // add info of new building?
-                              ],
-                            ),
-                          // Add every building from your allLocations map here...
-                            'Henry A. Ahnert Jr. Alumni Center' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Info Here ",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                              ],
-                            ),
-                            'Monroe Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building of communication classes, etc ", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                Text("Info here "),
-                              ],
-                            ),
-                            'Koehler Fieldhouse and Natatorium' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Indoor Gym and Swimming Pool", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                Text("Info Here"),
-                              ],
-                            ),
-                          //
-                            'Kemp Library' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building of the Warrior Tutoring Center and the Writing Studio",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                                SizedBox(height: 10),
-                                Text("Resources for students, study rooms, rentals available upon request",
-                                    style:TextStyle(fontSize: 15,
-                                        fontWeight: FontWeight.w500)),
-                              ],
-                            ),
-                            'Warren E. & Sandra Hoeffner Science and Technology Center' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building of STEM", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                Text("Ground Floor: McMunn Planetarium and Schisler Museum of Wildlife & Natural History "),
-                                Text("First Floor: Rooms 117 - 154"),
-                                Text("Second Floor: Math Question Center located "),
-                                Text("Third Floor: ")
-                              ],
-                            ),
-                            'Moore Biology Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Contains a large group lecture hall, a greenhouse and wildlife museum", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                Text("📋 Info goes here"),
-                              ],
-                            ),
-                            'Gessner Science Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Contains laboratories and also houses ESU’s Bloomberg Finance Lab.",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                              ],
-                            ),
-                            'Stroud Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Contains lecture halls, computer and language laboratories, instructional space and offices", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                // more info can go here
-                              ],
-                            ),
-                            'DeNike Center for Human Services' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Includes classrooms and laboratory areas for the departments of health, nursing, and recreation and leisure services management.", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                Text("Info goes here"),
-                              ],
-                            ),
-                            'Fine and Performing Arts Center' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Consists of two theaters, a gallery, concert hall, rehearsal areas, art studios and classrooms",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                                SizedBox(height: 10),
-                                Text("Ground Floor: Studios and Rehearsal Areas",
-                                    style:TextStyle(fontSize: 15,
-                                        fontWeight: FontWeight.w500)),
-                                Text("First Floor: Classrooms, Gallery, and Concert Hall Entrance",
-                                    style:TextStyle(fontSize: 15,
-                                        fontWeight: FontWeight.w500)),
-                                Text("Second Floor: Faculty Rooms"),
-                              ],
-                            ),
-                            'Zimbar-Liljenstein Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Includes academic programs for physical education/health education and sport management, a gymnasium, and also houses the student enrollment center",
-                                    style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                Text("Includes Financial Aid Office, Registar, Billing Office, and Student Enrollment Office"),
-
-                              ],
-                            ),
-                            'Dansbury Commons' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Serves Breakfast, Lunch, Light Lunch, and Dinner", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                Text("Starbucks located in Lower Dansbury"),
-                                Text("Hours of Operation: 7:30 AM - 8:00 PM"),
-                              ],
-                            ),
-                            'Eiler-Martin Stadium' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Outdoor Stadium and Track", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                              ],
-                            ),
-                            'Dave Carllyon Pavilion' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Picnic Table Area", style: TextStyle(fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-
-                          // Add every building from your allLocations map here...
-                            _ => const Text("ℹ️ No details available for this location yet."),
-                          },
-
-
-                          //const Text("Events Today", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          //const Divider(),
-                          // Your StreamBuilder will go here later
-                          //const Text("No events scheduled for this location today."),
+                          _buildAboutSection(), //builds about dynamically to fit chosen building
                         ],
                       ),
                     ),

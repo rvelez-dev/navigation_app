@@ -63,9 +63,43 @@ class BuildingInfo {
 
     return nowMins > openMins && nowMins < closeMins;
   }
-  // Setter example
-  /*set description(String value) {
-    if (value.isNotEmpty) _description = value;
-  }*/
 
+  // Formats the 7-day hours list into grouped, human-readable strings
+// e.g. ["Mon - Fri: 7:30 AM - 11:00 PM", "Sat: Closed", "Sun: 2:30 PM - 11:00 PM"]
+  List<String> get formattedHours {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    List<String> lines = [];
+
+    int i = 0;
+    while (i < _hours.length) {
+      final current = _hours[i];
+      int j = i + 1;
+
+      while (j < _hours.length &&
+          _hours[j].openTime.hour == current.openTime.hour &&
+          _hours[j].openTime.minute == current.openTime.minute &&
+          _hours[j].closeTime.hour == current.closeTime.hour &&
+          _hours[j].closeTime.minute == current.closeTime.minute) {
+        j++;
+      }
+
+      final bool isClosed =
+          current.openTime.hour == 0 && current.openTime.minute == 0 &&
+              current.closeTime.hour == 0 && current.closeTime.minute == 0;
+
+      final String dayRange = (j - 1 == i) ? days[i] : '${days[i]} - ${days[j - 1]}';
+      final String timeRange = isClosed ? 'Closed' : '${_fmtTime(current.openTime)} - ${_fmtTime(current.closeTime)}';
+
+      lines.add('$dayRange: $timeRange');
+      i = j;
+    }
+    return lines;
+  }
+
+  static String _fmtTime(TimeOfDay t) {
+    final hour = t.hour == 0 ? 12 : (t.hour > 12 ? t.hour - 12 : t.hour);
+    final minute = t.minute.toString().padLeft(2, '0');
+    final period = t.hour < 12 ? 'AM' : 'PM';
+    return '$hour:$minute $period';
+  }
 }
