@@ -936,12 +936,15 @@ class _MapViewState extends State<MapView> {
   Widget _buildAboutSection() {
     if (_selectedDestinationName == null) return const SizedBox.shrink();
 
+    //get the info on current chosen location
     final BuildingInfo? info = buildingData[_selectedDestinationName];
     if (info == null) return const Text("ℹ️ No details available for this location yet.");
 
+    //build section based on its data
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        //_buildImageGallery(info.imagePaths),
         Text(info.description, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
         const SizedBox(height: 10),
         const Text("Hours:", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -950,10 +953,40 @@ class _MapViewState extends State<MapView> {
     );
   }
 
+  Widget _buildImageGallery(List<String> imagePaths) {
+    // If no images yet, show nothing (handles buildings with empty imagePaths)
+    if (imagePaths.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 200, //height of widget
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,   // horizontal scroll
+            itemCount: imagePaths.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              return SizedBox( //used to adjust individual image width
+                width: 340,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    imagePaths[index],
+                    fit: BoxFit.cover,  // width/height params no longer needed here
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       // GPS Toggle Button
       floatingActionButton: FloatingActionButton.extended(
         heroTag: "start_mode_button_fab",
@@ -994,7 +1027,7 @@ class _MapViewState extends State<MapView> {
         backgroundColor: _useCurrentLocation ? Colors.blue : Colors.grey,
       ),
 
-      // KEY CHANGE: Use a Stack to put the Dropdown ON TOP of the Map
+      // Using a Stack to put the Dropdown over the Map
       body: Stack(
         children: [
           // 1. The Map (Bottom Layer)
@@ -1071,6 +1104,7 @@ class _MapViewState extends State<MapView> {
               minChildSize: 0.1,     // Can shrink down to 10%
               maxChildSize: 0.9,     // Can pull up to 90%
               builder: (BuildContext context, ScrollController scrollController) {
+                //the white box that is the menu background
                 return Container(
                   decoration: const BoxDecoration(
                     color: Colors.white,
@@ -1105,7 +1139,7 @@ class _MapViewState extends State<MapView> {
                             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 15),
-
+                          _buildImageGallery(buildingData[_selectedDestinationName]!.imagePaths),
                           // The Route Button (Hides when routing starts)
                           //adding walking time estimate
                           if (!_isRouting && _walkingTimeEstimate.isNotEmpty)

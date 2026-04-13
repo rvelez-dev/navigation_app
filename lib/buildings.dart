@@ -37,7 +37,7 @@ OperationHours get _closed => OperationHours(
 );
 
 //using a map so switch case can just pick the right name(key) and then match up to the data(value) here
-//TODO add destinations: University Apartments, Ridge,
+//TODO add destinations: University Apartments, Ridge, Wess Radio, secondary locations?
 Map<String, BuildingInfo> buildingData = {
   //1st entry with example comments
   'Kemp Library': BuildingInfo( //name connects to actual object that holds the data
@@ -66,7 +66,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A traditional residence hall on campus housing ESU students. Features shared common areas and laundry facilities.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Laundry', 'Common Lounge', 'Vending Machines'],
-    imagePaths: [], //TODO take outdoor photo
+    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo
     location: ll2.LatLng(40.99605,-75.17303)
   ),
 
@@ -75,7 +75,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A traditional residence hall providing on-campus housing for ESU students with shared common spaces.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Laundry', 'Common Lounge', 'Vending Machines'],
-    imagePaths: [], //TODO take outdoor photo
+    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo
     location: ll2.LatLng(40.99598,-75.17213)
   ),
 
@@ -84,7 +84,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A traditional residence hall offering on-campus living for ESU students.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Laundry', 'Common Lounge', 'Vending Machines'],
-    imagePaths: [], //TODO take outdoor photo
+    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo
     location: ll2.LatLng(40.99547,-75.17210)
   ),
 
@@ -93,7 +93,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A traditional residence hall offering on-campus living for ESU students.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Laundry', 'Common Lounge', 'Vending Machines'],
-    imagePaths: [], //TODO take outdoor photo
+    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo
     location: ll2.LatLng(40.99605, -75.17105)
   ),
 
@@ -102,7 +102,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A modern suite-style residence hall that also houses the University Police & Campus Information Center and the ESU Dining Services office.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Suite-Style Rooms', 'Laundry', 'Common Lounge', 'Geothermal Heating & Cooling'],
-    imagePaths: [], //TODO take outdoor photo, include reslide office and police station
+    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo, include reslide office and police station
     poi: ['University Police & Campus Information Center', 'ESU Dining Services Office'],
     location: ll2.LatLng(40.99799,-75.17100)
   ),
@@ -112,7 +112,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A traditional residence hall offering on-campus living for ESU students.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Laundry', 'Common Lounge', 'Vending Machines'],
-    imagePaths: [],//TODO take outdoor photo
+    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'],//TODO take outdoor photo
     location: ll2.LatLng(40.99866,-75.17193)
   ),
 
@@ -121,7 +121,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A modern suite-style residence hall with geothermal heating and cooling. Also houses the RecB Fitness Center in its lower level, open to all students.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Suite-Style Rooms', 'RecB Fitness Center', 'Laundry', 'Geothermal Heating & Cooling'],
-    imagePaths: [], //TODO take outdoor photo
+    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo
     location: ll2.LatLng(40.99908,-75.17233)
   ),
 
@@ -130,7 +130,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A modern suite-style residence hall with geothermal heating and cooling. Houses student support services including Health & Wellness, Student Conduct, the Dean of Students, and the Title IX Coordinator.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Suite-Style Rooms', 'Laundry', 'Geothermal Heating & Cooling'],
-    imagePaths: [], //TODO take outdoor photo, include the other facilities by parking lot also
+    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo, include the other facilities by parking lot also
     poi: ['Health & Wellness Office', 'Dean of Students', 'Student Conduct & Community Standards', 'Title IX Coordinator'],
     location: ll2.LatLng(40.99721,-75.17246)
   ),
@@ -200,7 +200,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'Houses science laboratories and is home to ESU\'s Bloomberg Finance Lab, used for finance and business coursework.',
     hours: _weeklyHours(weekdayOpen: 7, weekdayClose: 18, weekendOpen: 0, weekendClose: 0), // 7am - 6pm weekdays, closed weekends
     facilities: ['Science Labs', 'Bloomberg Finance Lab', 'Classrooms'],
-    imagePaths: [],//TODO take photo
+    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'],//TODO take photo
     location: ll2.LatLng(40.9959637,-75.1748588)
   ),
 
