@@ -998,7 +998,7 @@ class _MapViewState extends State<MapView> {
             try {
               debugPrint("Trying to get fresh location...");
               final LocationData fresh = await _location.getLocation()
-                  .timeout(const Duration(seconds: 3)); // ← key addition
+                  .timeout(const Duration(seconds: 3));
               if (fresh.latitude != null && mounted) {
                 _currentUserLocation = ll2.LatLng(fresh.latitude!, fresh.longitude!);
                 debugPrint("Got fresh location: $_currentUserLocation");
@@ -1138,6 +1138,15 @@ class _MapViewState extends State<MapView> {
                             _selectedDestinationName!,
                             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                           ),
+                          if (buildingData[_selectedDestinationName] != null)
+                            Text(
+                              buildingData[_selectedDestinationName]!.openStatus.label,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: buildingData[_selectedDestinationName]!.openStatus.color,
+                              ),
+                            ),
                           const SizedBox(height: 15),
                           _buildImageGallery(buildingData[_selectedDestinationName]!.imagePaths),
                           // The Route Button (Hides when routing starts)

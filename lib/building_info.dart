@@ -52,7 +52,7 @@ class BuildingInfo {
 
   // Method to check if the building is open
 
-  bool get isOpen {
+  /*bool get isOpen {
     TimeOfDay now = TimeOfDay.now();
     int index = DateTime.now().weekday - 1;
     OperationHours todaysHours = _hours[index];
@@ -62,6 +62,38 @@ class BuildingInfo {
     int closeMins= todaysHours.closeTime.hour * 60 + todaysHours.closeTime.minute;
 
     return nowMins > openMins && nowMins < closeMins;
+  }*/
+  // Returns the display status and its color based on hoursRemaining
+  ({String label, Color color}) get openStatus {
+    final hours = hoursRemaining;
+
+    // 24hr or closed-all-day buildings have no meaningful status
+    if (hours == 0) {
+      return (label: 'Closed', color: Colors.red);
+    } else if (hours <= 1) {
+      return (label: 'Closing Soon', color: Colors.orange);
+    } else {
+      return (label: 'Open', color: Colors.green);
+    }
+  }
+  int get hoursRemaining {
+    int index = DateTime.now().weekday - 1;
+    OperationHours todaysHours = _hours[index];
+
+    int openMins  = todaysHours.openTime.hour  * 60 + todaysHours.openTime.minute;
+    int closeMins = todaysHours.closeTime.hour * 60 + todaysHours.closeTime.minute;
+
+    // Both zero means closed all day OR 24hr open — return 0 either way
+    if (openMins == 0 && closeMins == 0) return 0;
+
+    TimeOfDay now = TimeOfDay.now();
+    int nowMins = now.hour * 60 + now.minute;
+
+    // Before opening or after closing — return 0
+    if (nowMins <= openMins || nowMins >= closeMins) return 0;
+
+    // Return full hours remaining, rounded down
+    return (closeMins - nowMins) ~/ 60;
   }
 
   // Formats the 7-day hours list into grouped, human-readable strings
