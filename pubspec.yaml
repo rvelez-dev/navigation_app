@@ -67,6 +67,27 @@ flutter:
   assets:
     - assets/esu_jsons/
     - assets/images/
+    - assets/images/building_photos/Abeloff/
+    - assets/images/building_photos/AlumniCenter/
+    - assets/images/building_photos/Beers/
+    - assets/images/building_photos/Dansbury/
+    - assets/images/building_photos/DeNike/
+    - assets/images/building_photos/EilerMartin/
+    - assets/images/building_photos/FineArts/
+    - assets/images/building_photos/Kemp/
+    - assets/images/building_photos/Koehler/
+    - assets/images/building_photos/Mattioli/
+    - assets/images/building_photos/Monroe/
+    - assets/images/building_photos/Moore/
+    - assets/images/building_photos/MulticulturalHouse/
+    - assets/images/building_photos/Placeholder/
+    - assets/images/building_photos/Reibman/
+    - assets/images/building_photos/Rosenkrans/
+    - assets/images/building_photos/SciTech/
+    - assets/images/building_photos/Stroud/
+    - assets/images/building_photos/UniversityCenter_New/
+    - assets/images/building_photos/Zimbar/
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

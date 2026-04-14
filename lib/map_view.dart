@@ -9,6 +9,8 @@ import 'dart:async';
 // Required for Uint8List
 import 'package:flutter/foundation.dart'; // for compute()
 import 'dart:convert';
+import 'building_info.dart';
+import 'buildings.dart';
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -18,73 +20,11 @@ class MapView extends StatefulWidget {
 }
 
 class _MapViewState extends State<MapView> {
-  // 1. Create the instance
+  // Create the instance for routing algorithm
   final RoutingService _routingService = RoutingService();
 
   //hosts the map platform and the layers within it
   MapLibreMapController? mapController;
-
-  //Creating translation of string location to latlang coordinates
-  static Map<String,ll2.LatLng> allLocations={
-    //entrance of building
-    'Laurel Residence Hall':ll2.LatLng(40.99605,-75.17303),
-    //entrance of building
-    'Shawnee Residence Hall': ll2.LatLng(40.99598,-75.17213),
-    //entrance of building
-    'Minsi Residence Hall': ll2.LatLng(40.99547,-75.17210),
-    //entrance of building
-    'Linden Residence Hall': ll2.LatLng(40.99605, -75.17105),
-    //entrance of building
-    'Hemlock Suites': ll2.LatLng(40.99799,-75.17100),
-    //entrance of building
-    'Lenape Residence Hall': ll2.LatLng(40.99866,-75.17193),
-    //entrance of building
-    'Hawthorn Suites' : ll2.LatLng(40.99908,-75.17233),
-    //entrance of building
-    'Sycamore Suites' : ll2.LatLng(40.99721,-75.17246),
-    //entrance of building
-    'Dansbury Commons' : ll2.LatLng(40.99671,-75.17351),
-    //entrance of building
-    'Monroe Hall' : ll2.LatLng(40.99525,-75.17283),
-    //entrance of building
-    'Koehler Fieldhouse and Natatorium' : ll2.LatLng(40.99710,-75.16993),
-    //entrance of building
-    'Kemp Library' : ll2.LatLng(40.99830,-75.17031),
-    //entrance of building
-    'Warren E. & Sandra Hoeffner Science and Technology Center' : ll2.LatLng(40.996636,-75.17557),
-    //entrance of building
-    'Moore Biology Hall' : ll2.LatLng(40.99631,-75.17498),
-    //entrance of building
-    'Gessner Science Hall' : ll2.LatLng(40.9959637,-75.1748588),
-    //entrance of building
-    'Stroud Hall' : ll2.LatLng(40.99530,-75.17441),
-    //entrance of building
-    'DeNike Center for Human Services' : ll2.LatLng(40.99413,-75.17611),
-    //entrance of building
-    'Fine and Performing Arts Center' : ll2.LatLng(40.99855,-75.16642),
-    //entrance of building
-    'Zimbar-Liljenstein Hall' : ll2.LatLng(40.99413,-75.17380),
-    //entrance of field (change this one?)
-    'Eiler-Martin Stadium' : ll2.LatLng(40.9940069,-75.1728448),
-    //this one seems fine
-    'Dave Carllyon Pavilion' : ll2.LatLng(40.9985246,-75.1728687),
-    //entrance of building
-    'Mattioli Recreation Center' : ll2.LatLng(40.99546,-75.17034),
-    //unchanged
-    'Joseph H. & Mildred E. Beers Lecture Hall' : ll2.LatLng(40.9954604,-75.1750394),
-    //entrance of builing
-    'Reibman Administration Building' : ll2.LatLng(40.99564,-75.17683),
-    //entrance of building
-    'Conference Services & Multicultural House' : ll2.LatLng(40.99587,-75.17637),
-    //entrance of building
-    'Abeloff Center for the Performing Arts' : ll2.LatLng(40.99453,-75.17533),
-    //entrance of building
-    'Rosenkrans Hall' : ll2.LatLng(40.99494,-75.17467),
-    //iffy on where to add entrance
-    'University Center' : ll2.LatLng(40.99604,-75.17384),
-    //unchanged
-    'Henry A. Ahnert Jr. Alumni Center' :  ll2.LatLng(40.9996531,-75.1713405),
-  };
 
   // State variables to track navigation
   ll2.LatLng? _startPoint;
@@ -96,12 +36,12 @@ class _MapViewState extends State<MapView> {
   String _walkingTimeEstimate = "";
 
   bool _showBlueDot = false;
-  bool _useCurrentLocation = false;
   bool _autoCenter = true;
   ll2.LatLng? _currentUserLocation;
 
   String? _selectedDestinationName;
   bool _isRouting = false;
+  //popup menu for building info, starting route,see walking time estimate etc.
   final DraggableScrollableController _sheetController = DraggableScrollableController();
 
   //location package
@@ -114,11 +54,10 @@ class _MapViewState extends State<MapView> {
   StreamSubscription<LocationData>? _locationSubscription;
   bool _isAddingRoute = false;
 
-  //manage route display
+  //manage route animated display
   Timer?  _animationTimer;
   double  _dashOffset = 0;
   bool    _routeLayerExists = false;
-
 
   @override
   void initState() {
@@ -229,17 +168,14 @@ class _MapViewState extends State<MapView> {
     _locationUpdateTimer = Timer(const Duration(milliseconds: 500), (){
       if(!mounted) return;
 
-      bool needsUpdate = false;
+      bool needsUpdate = true;
+      _startPoint = _currentUserLocation;
 
-      if(_useCurrentLocation){
-        _startPoint = _currentUserLocation;
-        needsUpdate = true;
-
-        //debounce route recalculation
-        if(_endPoint != null){
-          _scheduleRouteUpdate();
-        }
+      //debounce route recalculation
+      if(_endPoint != null){
+        _scheduleRouteUpdate();
       }
+
       if(_autoCenter){
         mapController?.animateCamera(
             CameraUpdate.newLatLngZoom(
@@ -258,6 +194,7 @@ class _MapViewState extends State<MapView> {
   //method to debounce route recalculation
   void _scheduleRouteUpdate(){
     _routeUpdateTimer?.cancel();
+    //every 10 seconds recalculate route
     _routeUpdateTimer = Timer(const Duration(milliseconds: 1000), (){
       if(_startPoint != null && _endPoint != null && mounted){
         final newRoute = _routingService.getRoute(_startPoint!, _endPoint!);
@@ -265,7 +202,7 @@ class _MapViewState extends State<MapView> {
           setState(() {
             _routePolyline = newRoute;
           });
-          addRouteLayer(_routePolyline);
+          _updateRouteGeometry(_routePolyline);
         }
       }
     });
@@ -274,11 +211,17 @@ class _MapViewState extends State<MapView> {
   void _startRerouteTimer() {
     _rerouteTimer?.cancel();
     _rerouteTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (!_isRouting || !_useCurrentLocation) return;
-      if (_currentUserLocation == null || _endPoint == null) return;
-      debugPrint("Reroute tick — redrawing from current location");
+      if (!_isRouting) {
+        debugPrint("reroute timer, not rerouting. is routing or not using current location");
+        return;
+      }
+      if (_currentUserLocation == null || _endPoint == null) {
+        debugPrint("reroute timer, current location or end point is null, {userloc: $_currentUserLocation} {endpoint: $_endPoint}");
+        return;
+      }
       _startPoint = _currentUserLocation;
       _makePath(_startPoint!, _endPoint!);
+      debugPrint("Reroute tick — redrawing from current location: $_currentUserLocation to $_endPoint");
     });
   }
 
@@ -286,30 +229,6 @@ class _MapViewState extends State<MapView> {
     _rerouteTimer?.cancel();
     _rerouteTimer = null;
   }
-    //location updates and recenter if needed
-   /* _location.onLocationChanged.listen((LocationData newLoc){
-      if(newLoc.latitude != null && newLoc.longitude != null){
-        _currentUserLocation = ll2.LatLng(newLoc.latitude!, newLoc.longitude!);
-        if(_useCurrentLocation){
-          setState(() {
-            _startPoint = _currentUserLocation;
-            // If they already picked a destination, update the route live as they walk
-            if (_endPoint != null) {
-              _routePolyline = _routingService.getRoute(_startPoint!, _endPoint!);
-            }
-          });
-        }
-        if(_autoCenter){//only continue to recenter if the user wants it
-          mapController?.animateCamera(
-            CameraUpdate.newLatLngZoom(
-              LatLng(newLoc.latitude!, newLoc.longitude!),
-              mapController?.cameraPosition?.zoom ?? 17.0,
-            ),
-          );
-        }
-      }
-    });*/
-  //
 
   //returns walking distance
   String _getWalkingTimeEstimate(List<ll2.LatLng> route) {
@@ -365,7 +284,7 @@ class _MapViewState extends State<MapView> {
   Future<void> _onMapTap(ll2.LatLng point) async {
     if (!_isGraphLoaded) return; // Don't allow taps until data is ready
     //debugPrint("Debug: _onMapTap: entered");
-    if (_useCurrentLocation && _currentUserLocation == null) {
+    if (_currentUserLocation == null) {
       final LocationData forcedLoc = await _location.getLocation();
       if (forcedLoc.latitude != null && mounted) {
         setState(() {
@@ -378,50 +297,33 @@ class _MapViewState extends State<MapView> {
     ll2.LatLng? newStart;
     ll2.LatLng? newEnd;
 
-
-    //setState(() {
-      //gps is start, tap is always the destination
-      if(_useCurrentLocation){
-        if(_currentUserLocation == null) {
-          if(mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text("Debug: _onMapTap: GPS location not found")),
-            );
-          }
-          return;
-        }
-        //set destination to tap point
-        debugPrint("Debug: _onMapTap: GPS mode on -> location found");
-        newStart = _currentUserLocation;
-        newEnd = point;
-      }else{
-        //manual start and end select mode
-        //debugPrint("Debug: _onMapTap: Manual mode on");
-        if (_startPoint == null || (_startPoint != null && _endPoint != null)) {
-          // Start fresh: set Point A and clear old route
-          newStart = point;
-          newEnd = null;
-          //_routePolyline = [];
-        }else{
-          // Set Point B and calculate the path
-          newStart = _startPoint;
-          newEnd = point;
-        }
+    //gps is start, tap is always the destination
+    if(_currentUserLocation == null) {
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("Debug: _onMapTap: GPS location not found")),
+        );
       }
-      if(mounted){
-        setState(() {
-          _startPoint = newStart;
-          _endPoint = newEnd;
-        });
-      }
+      return;
+    }
+    //set destination to tap point
+    debugPrint("Debug: _onMapTap: GPS mode on -> location found");
+    newStart = _currentUserLocation;
+    newEnd = point;
+    if(mounted){
+      setState(() {
+        _startPoint = newStart;
+        _endPoint = newEnd;
+      });
+    }
     if (_startPoint != null && _endPoint != null) {
       debugPrint("Debug: _onMapTap: drawing path from $_startPoint to $_endPoint");
       _makePath(_startPoint!, _endPoint!); // Updates the route line
     }
   }
 
-  // This handles the click from MapLibre and converts it for your RoutingService
+  // This handles the click from MapLibre and converts it for RoutingService
   void _handleMapTap(LatLng mapLibrePoint) {
     // Convert MapLibre LatLng to your existing ll2.LatLng format
     final convertedPoint = ll2.LatLng(
@@ -457,6 +359,7 @@ class _MapViewState extends State<MapView> {
   }
 
   //puts 3d buildings on map
+  //NOTE: need to remove demolished computing center from map
   Future <void> _add3DBuildingsLayer() async {
     // Check if the controller is ready
     if (mapController == null) return;
@@ -490,6 +393,7 @@ class _MapViewState extends State<MapView> {
   }
 
   //puts directional labels over designated buildings
+  //TODO convert back to geojson and use method learned from fixing grass layer
   static const Map<String,dynamic> _buildingLabelsData = {
     //if (mapController == null) return;
 
@@ -831,27 +735,60 @@ class _MapViewState extends State<MapView> {
     // redrawn it picks up smoothly rather than jumping back to 0.
   }
 
-  void _startRouting() {
-    // 1. Ensure we have a start point
-    _startPoint = _useCurrentLocation ? _currentUserLocation : _startPoint;
+  Future<void> _startRouting() async {
+    // 1. If we don't have a location yet, request permissions and get one
+    if (_currentUserLocation == null) {
+      bool hasPermission = await _handleLocationPermission();
+      if (!hasPermission) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Location permission is required to start navigation.")),
+        );
+        return;
+      }
+
+      // Permission granted — now fetch location and start listening
+      try {
+        final LocationData freshLoc = await _location.getLocation()
+            .timeout(const Duration(seconds: 5));
+        if (freshLoc.latitude != null && freshLoc.longitude != null) {
+          _currentUserLocation = ll2.LatLng(freshLoc.latitude!, freshLoc.longitude!);
+
+          // Also start the listener if it's not running
+          _locationSubscription ??= _location.onLocationChanged.listen((LocationData newLoc) {
+            if (newLoc.latitude != null && newLoc.longitude != null) {
+              _handleLocationUpdate(newLoc);
+            }
+          });
+        }
+      } catch (e) {
+        debugPrint("Failed to get location: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not get your location. Please try again.")),
+        );
+        return;
+      }
+    }
+
+    // 2. Now set the start point
+    _startPoint = _currentUserLocation;
 
     if (_startPoint == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Start point not set yet. Waiting for GPS or manual tap.")),
+        const SnackBar(content: Text("Still waiting for GPS signal...")),
       );
       return;
     }
 
-    // 2. Update state to show we are navigating
+    // 3. Update state to show we are navigating
     setState(() {
       _isRouting = true;
     });
 
-    // 3. Draw the path and move the camera
+    // 4. Draw the path and move the camera
     _makePath(_startPoint!, _endPoint!);
     _tiltAndRotateCamera(_startPoint!, _endPoint!);
 
-    // 4. Shrink the pull-up menu down to 15% of the screen
+    // 5. Shrink the pull-up menu down to 15% of the screen
     _sheetController.animateTo(
       0.15,
       duration: const Duration(milliseconds: 300),
@@ -859,6 +796,34 @@ class _MapViewState extends State<MapView> {
     );
     _startRerouteTimer();
   }
+  // void _startRouting() {
+  //   // 1. Ensure we have a start point
+  //   _startPoint =  _currentUserLocation;
+  //
+  //   if (_startPoint == null) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text("Start point not set yet. Waiting for GPS.")),
+  //     );
+  //     return;
+  //   }
+  //
+  //   // 2. Update state to show we are navigating
+  //   setState(() {
+  //     _isRouting = true;
+  //   });
+  //
+  //   // 3. Draw the path and move the camera
+  //   _makePath(_startPoint!, _endPoint!);
+  //   _tiltAndRotateCamera(_startPoint!, _endPoint!);
+  //
+  //   // 4. Shrink the pull-up menu down to 15% of the screen
+  //   _sheetController.animateTo(
+  //     0.15,
+  //     duration: const Duration(milliseconds: 300),
+  //     curve: Curves.easeInOut,
+  //   );
+  //   _startRerouteTimer();
+  // }
 
   Future<void> _updateRouteGeometry(List<ll2.LatLng> points) async {
     if (mapController == null || points.isEmpty) return;
@@ -955,9 +920,8 @@ class _MapViewState extends State<MapView> {
     );
   }
 
-
   void _handleLocationSelection(String destination) {
-    final ll2.LatLng? endpoint = allLocations[destination];
+    final ll2.LatLng? endpoint = buildingData[destination]?.location;
 
     if (endpoint == null) {
       debugPrint('No coordinates found for $destination');
@@ -1057,53 +1021,73 @@ class _MapViewState extends State<MapView> {
         mapController!.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
       }
     });*/
+
+    /*building info debug check ups
+    // Iterate over all buildings (e.g. to place map markers)
+    buildingData.forEach((name, info) {
+      debugPrint('${info.name} is at ${info.location}');
+    });
+
+    // Check how many buildings you have
+    debugPrint('$buildingData.length');
+     */
+  }
+
+  Widget _buildAboutSection() {
+    if (_selectedDestinationName == null) return const SizedBox.shrink();
+
+    //get the info on current chosen location
+    final BuildingInfo? info = buildingData[_selectedDestinationName];
+    if (info == null) return const Text("ℹ️ No details available for this location yet.");
+
+    //build section based on its data
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        //_buildImageGallery(info.imagePaths),
+        Text(info.description, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 10),
+        const Text("Hours:", style: TextStyle(fontWeight: FontWeight.bold)),
+        ...info.formattedHours.map((line) => Text(line)),
+      ],
+    );
+  }
+
+  Widget _buildImageGallery(List<String> imagePaths) {
+    // If no images yet, show nothing (handles buildings with empty imagePaths)
+    if (imagePaths.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 200, //height of widget
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,   // horizontal scroll
+            itemCount: imagePaths.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              return SizedBox( //used to adjust individual image width
+                width: 340,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    imagePaths[index],
+                    fit: BoxFit.cover,  // width/height params no longer needed here
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
-      // GPS Toggle Button
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: "start_mode_button_fab",
-        onPressed: () async {
-          if (!_useCurrentLocation) {
-            bool hasPermission = await _handleLocationPermission();
-            if (!hasPermission) return;
-            // Only fetch when turning GPS ON, with a timeout so it can't hang forever
-            try {
-              debugPrint("Trying to get fresh location...");
-              final LocationData fresh = await _location.getLocation()
-                  .timeout(const Duration(seconds: 3)); // ← key addition
-              if (fresh.latitude != null && mounted) {
-                _currentUserLocation = ll2.LatLng(fresh.latitude!, fresh.longitude!);
-                debugPrint("Got fresh location: $_currentUserLocation");
-              }
-            } catch (e) {
-              // Timeout or error — not a blocker, _currentUserLocation may already be set
-              // from the passive listener, so we continue anyway
-              debugPrint("Fresh location fetch skipped: $e");
-            }
-          }
-          if(mounted) {
-            setState(() {
-              _useCurrentLocation = !_useCurrentLocation;
-              if (_useCurrentLocation && _currentUserLocation != null) {
-                _startPoint = _currentUserLocation;
-                // Update route if destination exists
-                if (_endPoint != null) {
-                  _makePath(_startPoint!, _endPoint!);
-                }
-              }
-            });
-          }
-        },
-        label: Text(_useCurrentLocation ? "GPS Start" : "Manual Start"),
-        icon: Icon(_useCurrentLocation ? Icons.my_location : Icons.edit_location),
-        backgroundColor: _useCurrentLocation ? Colors.blue : Colors.grey,
-      ),
-
-      // KEY CHANGE: Use a Stack to put the Dropdown ON TOP of the Map
+      // Using a Stack to put the Dropdown over the Map
       body: Stack(
         children: [
           // 1. The Map (Bottom Layer)
@@ -1180,6 +1164,7 @@ class _MapViewState extends State<MapView> {
               minChildSize: 0.1,     // Can shrink down to 10%
               maxChildSize: 0.9,     // Can pull up to 90%
               builder: (BuildContext context, ScrollController scrollController) {
+                //the white box that is the menu background
                 return Container(
                   decoration: const BoxDecoration(
                     color: Colors.white,
@@ -1213,8 +1198,17 @@ class _MapViewState extends State<MapView> {
                             _selectedDestinationName!,
                             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                           ),
+                          if (buildingData[_selectedDestinationName] != null)
+                            Text(
+                              buildingData[_selectedDestinationName]!.openStatus.label,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: buildingData[_selectedDestinationName]!.openStatus.color,
+                              ),
+                            ),
                           const SizedBox(height: 15),
-
+                          _buildImageGallery(buildingData[_selectedDestinationName]!.imagePaths),
                           // The Route Button (Hides when routing starts)
                           //adding walking time estimate
                           if (!_isRouting && _walkingTimeEstimate.isNotEmpty)
@@ -1295,294 +1289,7 @@ class _MapViewState extends State<MapView> {
                           ),
                           // Info of all buildings outputted to user
                           const Divider(),
-                          //switch case for buildings
-                          switch (_selectedDestinationName){
-                            //Residence Halls
-                            'Laurel Residence Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Traditional Style Building",
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      )),
-
-                              ],
-                            ),
-                            'Shawnee Residence Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Traditional Style Building", style: TextStyle(fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            'Minsi Residence Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Traditional Style Building ", style: TextStyle(fontWeight: FontWeight.bold)),
-
-                              ],
-                            ),
-                            'Linden Residence Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Traditional Style Building",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                              ],
-                            ),
-                            'Hemlock Residence Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Suite Style Building", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                Text("ESU Police Department & Parking Services located across Kemp Library"),
-                                Text("ESU Residential Life & Housing located across Sycamore South Wing"),
-
-                              ],
-                            ),
-                            'Lenape Residence Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Traditional Style Building", style: TextStyle(fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            'Hawthorn Suites' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Suite Style Building",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                                SizedBox(height: 10),
-                                Text("Rec B Entrance located outside lower Hawthorn",
-                                    style:TextStyle(fontSize: 15,
-                                        fontWeight: FontWeight.w500)),
-                                Text("Houses House of Sylvia, College of Education, College of Business",
-                                    style:TextStyle(fontSize: 15,
-                                        fontWeight: FontWeight.w500)),
-                              ],
-                            ),
-                            'Sycamore Suites' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Suite Style Building", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                Text("Houses Honors Students, STEM majors,"),
-                              ],
-                            ),
-                          //End of residence hall
-                            'Mattioli Recreation Center' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Mattioli Rec Center offers a variety of fitness events", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                Text("Hours: "),
-                                Text("Monday - Thursday: 6AM - 11PM "),
-                                Text("Friday - Sunday: 11AM - 9PM"),
-                              ],
-                            ),
-                            'Joseph H. & Mildred E. Beers Lecture Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building for classes, speaking, and networking events",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                              ],
-                            ),
-                            'Reibman Administration Building' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building for HR Department, VP offices, and Administration Services", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                // add more info about admissions?
-                              ],
-                            ),
-                            'Conference Services & Multicultural House' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building to host club socials, and many more ", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                // add resources available here
-                              ],
-                            ),
-                            'Abeloff Center for the Performing Arts' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building to host a variety of events for incoming/current students",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                              ],
-                            ),
-                            'Rosenkrans Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building of peer mentoring, classrooms, and more", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                               //can add more info about buildings
-                              ],
-                            ),
-                            'University Center' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Pending Info", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                // add info of new building?
-                              ],
-                            ),
-                          // Add every building from your allLocations map here...
-                            'Henry A. Ahnert Jr. Alumni Center' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Info Here ",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                              ],
-                            ),
-                            'Monroe Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building of communication classes, etc ", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                Text("Info here "),
-                              ],
-                            ),
-                            'Koehler Fieldhouse and Natatorium' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Indoor Gym and Swimming Pool", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                Text("Info Here"),
-                              ],
-                            ),
-                          //
-                            'Kemp Library' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building of the Warrior Tutoring Center and the Writing Studio",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                                SizedBox(height: 10),
-                                Text("Resources for students, study rooms, rentals available upon request",
-                                    style:TextStyle(fontSize: 15,
-                                        fontWeight: FontWeight.w500)),
-                              ],
-                            ),
-                            'Warren E. & Sandra Hoeffner Science and Technology Center' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Building of STEM", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                Text("Ground Floor: McMunn Planetarium and Schisler Museum of Wildlife & Natural History "),
-                                Text("First Floor: Rooms 117 - 154"),
-                                Text("Second Floor: Math Question Center located "),
-                                Text("Third Floor: ")
-                              ],
-                            ),
-                            'Moore Biology Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Contains a large group lecture hall, a greenhouse and wildlife museum", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                Text("📋 Info goes here"),
-                              ],
-                            ),
-                            'Gessner Science Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Contains laboratories and also houses ESU’s Bloomberg Finance Lab.",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                              ],
-                            ),
-                            'Stroud Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Contains lecture halls, computer and language laboratories, instructional space and offices", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                // more info can go here
-                              ],
-                            ),
-                            'DeNike Center for Human Services' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Includes classrooms and laboratory areas for the departments of health, nursing, and recreation and leisure services management.", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                Text("Info goes here"),
-                              ],
-                            ),
-                            'Fine and Performing Arts Center' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Consists of two theaters, a gallery, concert hall, rehearsal areas, art studios and classrooms",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    )),
-                                SizedBox(height: 10),
-                                Text("Ground Floor: Studios and Rehearsal Areas",
-                                    style:TextStyle(fontSize: 15,
-                                        fontWeight: FontWeight.w500)),
-                                Text("First Floor: Classrooms, Gallery, and Concert Hall Entrance",
-                                    style:TextStyle(fontSize: 15,
-                                        fontWeight: FontWeight.w500)),
-                                Text("Second Floor: Faculty Rooms"),
-                              ],
-                            ),
-                            'Zimbar-Liljenstein Hall' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Includes academic programs for physical education/health education and sport management, a gymnasium, and also houses the student enrollment center",
-                                    style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                                Text("Includes Financial Aid Office, Registar, Billing Office, and Student Enrollment Office"),
-
-                              ],
-                            ),
-                            'Dansbury Commons' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Serves Breakfast, Lunch, Light Lunch, and Dinner", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                Text("Starbucks located in Lower Dansbury"),
-                                Text("Hours of Operation: 7:30 AM - 8:00 PM"),
-                              ],
-                            ),
-                            'Eiler-Martin Stadium' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Outdoor Stadium and Track", style: TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 10),
-                              ],
-                            ),
-                            'Dave Carllyon Pavilion' => const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Picnic Table Area", style: TextStyle(fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-
-                          // Add every building from your allLocations map here...
-                            _ => const Text("ℹ️ No details available for this location yet."),
-                          },
-
-
-                          //const Text("Events Today", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          //const Divider(),
-                          // Your StreamBuilder will go here later
-                          //const Text("No events scheduled for this location today."),
+                          _buildAboutSection(), //builds about dynamically to fit chosen building
                         ],
                       ),
                     ),
