@@ -559,7 +559,7 @@ class _MapViewState extends State<MapView> {
         "tree-canopy-source",
         "tree-canopy-layer",
         FillExtrusionLayerProperties(
-          fillExtrusionColor: "#2D6A4F",
+          fillExtrusionColor: "#77a37a",
           fillExtrusionHeight: 6.25,
           fillExtrusionBase: 2.5,
           fillExtrusionOpacity: 0.95,
