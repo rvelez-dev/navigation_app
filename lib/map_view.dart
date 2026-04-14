@@ -6,7 +6,7 @@ import 'package:flutter/services.dart' show rootBundle; // Required to load the 
 import 'routing_service.dart'; // Ensure this file exists in your lib folder
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'dart:async';
-import 'dart:typed_data'; // Required for Uint8List
+// Required for Uint8List
 import 'package:flutter/foundation.dart'; // for compute()
 import 'dart:convert';
 
@@ -626,6 +626,64 @@ class _MapViewState extends State<MapView> {
     }
   }
 
+  //adding trees to the map
+  Future<void> _addTreeLayer() async {
+    if (mapController == null) return;
+
+    try {
+      final String canopyJson = await rootBundle.loadString(
+        'assets/esu_jsons/trees.geojson',
+      );
+      final String trunkJson = await rootBundle.loadString(
+        'assets/esu_jsons/treetrunks.geojson',
+      );
+      final Map<String, dynamic> canopyData = json.decode(canopyJson);
+      final Map<String, dynamic> trunkData = json.decode(trunkJson);
+
+      await mapController!.addSource(
+        "tree-canopy-source",
+        GeojsonSourceProperties(data: canopyData),
+      );
+
+      await mapController!.addSource(
+        "tree-trunk-source",
+        GeojsonSourceProperties(data:trunkData),
+      );
+
+      // Canopy layer
+      await mapController!.addLayer(
+        "tree-canopy-source",
+        "tree-canopy-layer",
+        FillExtrusionLayerProperties(
+          fillExtrusionColor: "#2D6A4F",
+          fillExtrusionHeight: 6.25,
+          fillExtrusionBase: 2.5,
+          fillExtrusionOpacity: 0.95,
+          fillExtrusionVerticalGradient: true,
+        ),
+        belowLayerId: "building-labels-display-layer",
+      );
+
+      // trunk layer
+      await mapController!.addLayer(
+        "tree-trunk-source",
+        "tree-trunk-layer",
+        FillExtrusionLayerProperties(
+          fillExtrusionColor: "#3B1F0A",
+          fillExtrusionHeight: 2.5,
+          fillExtrusionBase: 0.0,
+          fillExtrusionOpacity: 0.95,
+          fillExtrusionVerticalGradient: true,
+        ),
+        belowLayerId: "building-labels-display-layer",
+      );
+
+      debugPrint("Tree layers added successfully");
+    } catch (e) {
+      debugPrint("Error adding tree layer: $e");
+    }
+  }
+
   //Creates the route points argument for draw route using a given start and end, calls _addRouteLayer
   void _makePath(ll2.LatLng start, ll2.LatLng end){
     debugPrint("Debug: Calling routing service");
@@ -961,6 +1019,8 @@ class _MapViewState extends State<MapView> {
       await Future.wait([
         //2. adding grass layer
         _addGrassLayer(),
+        //adding tree layer
+        _addTreeLayer(),
         // 2. Add 3D buildings
       _add3DBuildingsLayer(),
       // 3. create layers for the user, route, and blue dot
