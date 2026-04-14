@@ -36,7 +36,6 @@ class _MapViewState extends State<MapView> {
   String _walkingTimeEstimate = "";
 
   bool _showBlueDot = false;
-  bool _useCurrentLocation = false;
   bool _autoCenter = true;
   ll2.LatLng? _currentUserLocation;
 
@@ -169,17 +168,14 @@ class _MapViewState extends State<MapView> {
     _locationUpdateTimer = Timer(const Duration(milliseconds: 500), (){
       if(!mounted) return;
 
-      bool needsUpdate = false;
+      bool needsUpdate = true;
+      _startPoint = _currentUserLocation;
 
-      if(_useCurrentLocation){
-        _startPoint = _currentUserLocation;
-        needsUpdate = true;
-
-        //debounce route recalculation
-        if(_endPoint != null){
-          _scheduleRouteUpdate();
-        }
+      //debounce route recalculation
+      if(_endPoint != null){
+        _scheduleRouteUpdate();
       }
+
       if(_autoCenter){
         mapController?.animateCamera(
             CameraUpdate.newLatLngZoom(
@@ -206,7 +202,7 @@ class _MapViewState extends State<MapView> {
           setState(() {
             _routePolyline = newRoute;
           });
-          addRouteLayer(_routePolyline);
+          _updateRouteGeometry(_routePolyline);
         }
       }
     });
@@ -215,7 +211,7 @@ class _MapViewState extends State<MapView> {
   void _startRerouteTimer() {
     _rerouteTimer?.cancel();
     _rerouteTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (!_isRouting || !_useCurrentLocation) {
+      if (!_isRouting) {
         debugPrint("reroute timer, not rerouting. is routing or not using current location");
         return;
       }
@@ -288,7 +284,7 @@ class _MapViewState extends State<MapView> {
   Future<void> _onMapTap(ll2.LatLng point) async {
     if (!_isGraphLoaded) return; // Don't allow taps until data is ready
     //debugPrint("Debug: _onMapTap: entered");
-    if (_useCurrentLocation && _currentUserLocation == null) {
+    if (_currentUserLocation == null) {
       final LocationData forcedLoc = await _location.getLocation();
       if (forcedLoc.latitude != null && mounted) {
         setState(() {
@@ -301,43 +297,26 @@ class _MapViewState extends State<MapView> {
     ll2.LatLng? newStart;
     ll2.LatLng? newEnd;
 
-
-    //setState(() {
-      //gps is start, tap is always the destination
-      if(_useCurrentLocation){
-        if(_currentUserLocation == null) {
-          if(mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text("Debug: _onMapTap: GPS location not found")),
-            );
-          }
-          return;
-        }
-        //set destination to tap point
-        debugPrint("Debug: _onMapTap: GPS mode on -> location found");
-        newStart = _currentUserLocation;
-        newEnd = point;
-      }else{
-        //manual start and end select mode
-        //debugPrint("Debug: _onMapTap: Manual mode on");
-        if (_startPoint == null || (_startPoint != null && _endPoint != null)) {
-          // Start fresh: set Point A and clear old route
-          newStart = point;
-          newEnd = null;
-          //_routePolyline = [];
-        }else{
-          // Set Point B and calculate the path
-          newStart = _startPoint;
-          newEnd = point;
-        }
+    //gps is start, tap is always the destination
+    if(_currentUserLocation == null) {
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("Debug: _onMapTap: GPS location not found")),
+        );
       }
-      if(mounted){
-        setState(() {
-          _startPoint = newStart;
-          _endPoint = newEnd;
-        });
-      }
+      return;
+    }
+    //set destination to tap point
+    debugPrint("Debug: _onMapTap: GPS mode on -> location found");
+    newStart = _currentUserLocation;
+    newEnd = point;
+    if(mounted){
+      setState(() {
+        _startPoint = newStart;
+        _endPoint = newEnd;
+      });
+    }
     if (_startPoint != null && _endPoint != null) {
       debugPrint("Debug: _onMapTap: drawing path from $_startPoint to $_endPoint");
       _makePath(_startPoint!, _endPoint!); // Updates the route line
@@ -698,27 +677,60 @@ class _MapViewState extends State<MapView> {
     // redrawn it picks up smoothly rather than jumping back to 0.
   }
 
-  void _startRouting() {
-    // 1. Ensure we have a start point
-    _startPoint = _useCurrentLocation ? _currentUserLocation : _startPoint;
+  Future<void> _startRouting() async {
+    // 1. If we don't have a location yet, request permissions and get one
+    if (_currentUserLocation == null) {
+      bool hasPermission = await _handleLocationPermission();
+      if (!hasPermission) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Location permission is required to start navigation.")),
+        );
+        return;
+      }
+
+      // Permission granted — now fetch location and start listening
+      try {
+        final LocationData freshLoc = await _location.getLocation()
+            .timeout(const Duration(seconds: 5));
+        if (freshLoc.latitude != null && freshLoc.longitude != null) {
+          _currentUserLocation = ll2.LatLng(freshLoc.latitude!, freshLoc.longitude!);
+
+          // Also start the listener if it's not running
+          _locationSubscription ??= _location.onLocationChanged.listen((LocationData newLoc) {
+            if (newLoc.latitude != null && newLoc.longitude != null) {
+              _handleLocationUpdate(newLoc);
+            }
+          });
+        }
+      } catch (e) {
+        debugPrint("Failed to get location: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not get your location. Please try again.")),
+        );
+        return;
+      }
+    }
+
+    // 2. Now set the start point
+    _startPoint = _currentUserLocation;
 
     if (_startPoint == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Start point not set yet. Waiting for GPS or manual tap.")),
+        const SnackBar(content: Text("Still waiting for GPS signal...")),
       );
       return;
     }
 
-    // 2. Update state to show we are navigating
+    // 3. Update state to show we are navigating
     setState(() {
       _isRouting = true;
     });
 
-    // 3. Draw the path and move the camera
+    // 4. Draw the path and move the camera
     _makePath(_startPoint!, _endPoint!);
     _tiltAndRotateCamera(_startPoint!, _endPoint!);
 
-    // 4. Shrink the pull-up menu down to 15% of the screen
+    // 5. Shrink the pull-up menu down to 15% of the screen
     _sheetController.animateTo(
       0.15,
       duration: const Duration(milliseconds: 300),
@@ -726,6 +738,34 @@ class _MapViewState extends State<MapView> {
     );
     _startRerouteTimer();
   }
+  // void _startRouting() {
+  //   // 1. Ensure we have a start point
+  //   _startPoint =  _currentUserLocation;
+  //
+  //   if (_startPoint == null) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text("Start point not set yet. Waiting for GPS.")),
+  //     );
+  //     return;
+  //   }
+  //
+  //   // 2. Update state to show we are navigating
+  //   setState(() {
+  //     _isRouting = true;
+  //   });
+  //
+  //   // 3. Draw the path and move the camera
+  //   _makePath(_startPoint!, _endPoint!);
+  //   _tiltAndRotateCamera(_startPoint!, _endPoint!);
+  //
+  //   // 4. Shrink the pull-up menu down to 15% of the screen
+  //   _sheetController.animateTo(
+  //     0.15,
+  //     duration: const Duration(milliseconds: 300),
+  //     curve: Curves.easeInOut,
+  //   );
+  //   _startRerouteTimer();
+  // }
 
   Future<void> _updateRouteGeometry(List<ll2.LatLng> points) async {
     if (mapController == null || points.isEmpty) return;
@@ -987,46 +1027,6 @@ class _MapViewState extends State<MapView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // GPS Toggle Button
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: "start_mode_button_fab",
-        onPressed: () async {
-          if (!_useCurrentLocation) {
-            bool hasPermission = await _handleLocationPermission();
-            if (!hasPermission) return;
-            // Only fetch when turning GPS ON, with a timeout so it can't hang forever
-            try {
-              debugPrint("Trying to get fresh location...");
-              final LocationData fresh = await _location.getLocation()
-                  .timeout(const Duration(seconds: 3));
-              if (fresh.latitude != null && mounted) {
-                _currentUserLocation = ll2.LatLng(fresh.latitude!, fresh.longitude!);
-                debugPrint("Got fresh location: $_currentUserLocation");
-              }
-            } catch (e) {
-              // Timeout or error — not a blocker, _currentUserLocation may already be set
-              // from the passive listener, so we continue anyway
-              debugPrint("Fresh location fetch skipped: $e");
-            }
-          }
-          if(mounted) {
-            setState(() {
-              _useCurrentLocation = !_useCurrentLocation;
-              if (_useCurrentLocation && _currentUserLocation != null) {
-                _startPoint = _currentUserLocation;
-                // Update route if destination exists
-                if (_endPoint != null) {
-                  _makePath(_startPoint!, _endPoint!);
-                }
-              }
-            });
-          }
-        },
-        label: Text(_useCurrentLocation ? "GPS Start" : "Manual Start"),
-        icon: Icon(_useCurrentLocation ? Icons.my_location : Icons.edit_location),
-        backgroundColor: _useCurrentLocation ? Colors.blue : Colors.grey,
-      ),
-
       // Using a Stack to put the Dropdown over the Map
       body: Stack(
         children: [
