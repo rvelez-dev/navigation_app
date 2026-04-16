@@ -14,8 +14,8 @@ class BuildingInfo {
   List<OperationHours> _hours;
   List<String> _facilities;
   List<String> _imagePaths;
-  List<String>? _poi;//points of interest for composite buildings
   ll2.LatLng _location;
+  List<String>? _tags;
 
   // Constructor
   BuildingInfo({
@@ -25,14 +25,15 @@ class BuildingInfo {
     required List<String> facilities,
     required List<String> imagePaths,
     required ll2.LatLng location,
-    List<String>? poi
+    List<String>? poi,
+    List<String>? tags
   })  : _name = name,
         _description = description,
         _hours = hours,
         _facilities = facilities,
         _imagePaths = imagePaths,
         _location = location,
-        _poi = poi;
+        _tags = tags;
 
 
   // Getters
@@ -46,29 +47,24 @@ class BuildingInfo {
 
   List<String> get imagePaths => _imagePaths;
 
-  List<String>? get poi => _poi;
+  List<String>? get tags => _tags;
 
   ll2.LatLng get location => _location;
 
   // Method to check if the building is open
 
-  /*bool get isOpen {
-    TimeOfDay now = TimeOfDay.now();
-    int index = DateTime.now().weekday - 1;
-    OperationHours todaysHours = _hours[index];
 
-    int nowMins  = now.hour * 60 + now.minute;
-    int openMins = todaysHours.openTime.hour  * 60 + todaysHours.openTime.minute;
-    int closeMins= todaysHours.closeTime.hour * 60 + todaysHours.closeTime.minute;
-
-    return nowMins > openMins && nowMins < closeMins;
-  }*/
   // Returns the display status and its color based on hoursRemaining
   ({String label, Color color}) get openStatus {
     final hours = hoursRemaining;
 
     // 24hr or closed-all-day buildings have no meaningful status
     if (hours == 0) {
+      if(tags != null){
+        if(tags!.contains('residence_hall')){
+          return (label: 'Closed, resident access only', color: Colors.deepOrange);
+        }
+      }
       return (label: 'Closed', color: Colors.red);
     } else if (hours <= 1) {
       return (label: 'Closing Soon', color: Colors.orange);
