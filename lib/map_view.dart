@@ -445,6 +445,8 @@ class _MapViewState extends State<MapView> {
         ),
         //belowLayerId: firstSymbolId,
         sourceLayer: "building",
+        //attempt to filter out computing center
+        //filter: ["!=", ["get","osm_id"], "w554578874"],
       );
       debugPrint("3D buildings layer added successfully");
     }catch (e){
@@ -470,7 +472,7 @@ class _MapViewState extends State<MapView> {
               { "type": "Feature", "properties": { "name": "Koehler Fieldhouse and Natatorium" }, "geometry": { "type": "Point", "coordinates": [-75.1703, 40.9968] } },
               { "type": "Feature", "properties": { "name": "Kemp Library" }, "geometry": { "type": "Point", "coordinates": [-75.1701, 40.9984] } },
               { "type": "Feature", "properties": { "name": "Mattioli Recreation Center" }, "geometry": { "type": "Point", "coordinates": [-75.1701, 40.9953] } },
-              { "type": "Feature", "properties": { "name": "Computing Center" }, "geometry": { "type": "Point", "coordinates": [-75.1745, 40.9959] } },
+              //{ "type": "Feature", "properties": { "name": "Computing Center" }, "geometry": { "type": "Point", "coordinates": [-75.1745, 40.9959] } },
               { "type": "Feature", "properties": { "name": "Beers Lecture Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1749, 40.9955] } },
               { "type": "Feature", "properties": { "name": "Reibman Administration Building" }, "geometry": { "type": "Point", "coordinates": [-75.1768, 40.9957] } },
               { "type": "Feature", "properties": { "name": "Moore Biology Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1749, 40.9965] } },
@@ -634,7 +636,7 @@ class _MapViewState extends State<MapView> {
         "tree-trunk-layer",
         FillExtrusionLayerProperties(
           fillExtrusionColor: "#3B1F0A",
-          fillExtrusionHeight: 2.5,
+          fillExtrusionHeight: 3.5,
           fillExtrusionBase: 0.0,
           fillExtrusionOpacity: 0.95,
           fillExtrusionVerticalGradient: true,
@@ -1112,6 +1114,11 @@ class _MapViewState extends State<MapView> {
           // 1. The Map (Bottom Layer)
           MapLibreMap(
             //enable the geolocation feature
+            cameraTargetBounds: CameraTargetBounds(LatLngBounds(
+              southwest: const LatLng(40.99203,-75.17833),
+              northeast: const LatLng(40.9997558, -75.1597061),
+            )),
+            minMaxZoomPreference: const MinMaxZoomPreference(14.0, 21.0),
             myLocationEnabled: _showBlueDot,
             myLocationRenderMode: MyLocationRenderMode.normal, // Makes it follow you
             // Set tracking to None initially so it doesn't 'search' for GPS
@@ -1125,6 +1132,7 @@ class _MapViewState extends State<MapView> {
               zoom: 17.0,
               tilt: 60,
             ),
+
             onMapCreated: (controller) => mapController = controller,
             onStyleLoadedCallback: _onStyleLoaded,
             onMapClick: (point, latlng) => _handleMapTap(latlng),
