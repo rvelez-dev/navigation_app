@@ -39,6 +39,9 @@ class _MapViewState extends State<MapView> {
   bool _autoCenter = true;
   ll2.LatLng? _currentUserLocation;
 
+  // how close a tap needs to be to a buildings coordinate to select it
+  static const double _buildingTapRadiusMeters = 40.0;
+
   String? _selectedDestinationName;
   bool _isRouting = false;
   //popup menu for building info, starting route,see walking time estimate etc.
@@ -323,7 +326,7 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  // This handles the click from MapLibre and converts it for RoutingService
+  //This handles the click from MapLibre and converts it for RoutingService
   void _handleMapTap(LatLng mapLibrePoint) {
     // Convert MapLibre LatLng to your existing ll2.LatLng format
     final convertedPoint = ll2.LatLng(
@@ -335,6 +338,63 @@ class _MapViewState extends State<MapView> {
     // Now call your existing logic that handles routing and markers
     _onMapTap(convertedPoint);
   }
+
+  /*// Checks if [tapPoint] is within [_buildingTapRadiusMeters] of any known
+  // building label. Returns the building name string, or null if nothing is close.
+  String? _findNearestBuilding(ll2.LatLng tapPoint) {
+    const ll2.Distance distCalc = ll2.Distance();
+    String? closestName;
+    double closestDist = double.infinity;
+
+    // _buildingLabelsData["features"] is the list of all labelled buildings
+    final features = _buildingLabelsData["features"] as List<dynamic>;
+
+    for (final feature in features) {
+      final coords = feature["geometry"]["coordinates"] as List<dynamic>;
+      final buildingLatLng = ll2.LatLng(
+        (coords[1] as num).toDouble(),   // latitude
+        (coords[0] as num).toDouble(),   // longitude
+      );
+
+      final double dist = distCalc.as(
+        ll2.LengthUnit.Meter,
+        tapPoint,
+        buildingLatLng,
+      );
+
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestName = feature["properties"]["name"] as String?;
+      }
+    }
+
+    // Only return a hit if it's actually close enough
+    if (closestDist <= _buildingTapRadiusMeters) {
+      return closestName;
+    }
+    return null;
+  }
+
+// Replace your existing _handleMapTap with this:
+  void _handleMapTap(LatLng mapLibrePoint) {
+    final convertedPoint = ll2.LatLng(
+      mapLibrePoint.latitude,
+      mapLibrePoint.longitude,
+    );
+    debugPrint("Debug: _handleMapTap: user tapped point: $convertedPoint");
+
+    // 1. Check if the tap landed on (or near) a known building
+    final String? tappedBuilding = _findNearestBuilding(convertedPoint);
+
+    if (tappedBuilding != null) {
+      debugPrint("Debug: _handleMapTap: tapped building '$tappedBuilding'");
+      // 2. Use the same path as the dropdown — opens the sheet menu
+      _handleLocationSelection(tappedBuilding);
+    }/* else {
+      // 3. Tapped open ground, keep existing raw routing behavior
+      _onMapTap(convertedPoint);
+    }*/
+  }*/
 
   //bearing to change camera angle towards location
   void _tiltAndRotateCamera(ll2.LatLng start, ll2.LatLng destination) {
@@ -608,8 +668,8 @@ class _MapViewState extends State<MapView> {
       print(path[i]);
     }*/
   }
+
   // This actually talks to the MapLibre engine to visualize the path from _makePath
-  //new animated version
   Future<void> addRouteLayer(List<ll2.LatLng> points) async {
     if (mapController == null || points.isEmpty) return;
     if(_isAddingRoute){return;}
@@ -643,7 +703,7 @@ class _MapViewState extends State<MapView> {
     };
 
     try {
-      // ── Remove old layer/source if they exist ─────────────────────────────
+      // Remove old layer/source if they exist
       // We track _routeLayerExists ourselves because querying the map is async
       // and can race with the add calls below.
       if (_routeLayerExists) {
@@ -655,7 +715,7 @@ class _MapViewState extends State<MapView> {
       // Also clear any old addLine() lines from the previous static approach
       await mapController!.clearLines();
 
-      // ── Add the GeoJSON source ─────────────────────────────────────────────
+      //Add the GeoJSON source
       // A "source" is just the data. A "layer" is how it looks.
       // Separating them lets us update the style (dasharray) without
       // touching the geometry data.
@@ -664,7 +724,7 @@ class _MapViewState extends State<MapView> {
         GeojsonSourceProperties(data: geojson),
       );
 
-      // ── Add the line layer ─────────────────────────────────────────────────
+      // Add the line layer
       // lineDasharray: [dash length, gap length] in "line-width units"
       // We start with [2, 2] — equal dashes and gaps — and shift these
       // values in the timer to create motion.
@@ -672,18 +732,18 @@ class _MapViewState extends State<MapView> {
         "route-source",
         "animated-route",
         LineLayerProperties(
-          lineColor: "#FF0000",       // your existing ESU red
-          lineWidth: 5.0,             // slightly thicker so dashes are visible
+          lineColor: "#FF0000",
+          lineWidth: 5.0,
           lineOpacity: 0.9,
           lineCap: "round",           // rounded ends on each dash segment
           lineJoin: "round",
-          lineDasharray: [2, 2],      // initial dash pattern — we'll animate this
+          lineDasharray: [2, 2],      // initial dash pattern that gets animated
         ),
       );
 
       _routeLayerExists = true;
 
-      // ── Start the animation loop ───────────────────────────────────────────
+      //Start the animation loop
       _startRouteAnimation();
 
     } catch (e) {
@@ -698,25 +758,12 @@ class _MapViewState extends State<MapView> {
     // Each tick shifts the dash pattern by 0.5 units.
     // The pattern repeats every (dash + gap) = 4 units, so the "loop"
     // completes every 8 ticks (400 ms) — a comfortable walking-pace feel.
-    //
-    // To make it faster: increase the step (e.g. 1.0) or shorten the interval.
-    // To make it slower: decrease the step (e.g. 0.25) or lengthen the interval.
+    // make it faster: increase the step (e.g. 1.0) or shorten the interval.
+    // make it slower: decrease the step (e.g. 0.25) or lengthen the interval.
     _animationTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
       if (!mounted || mapController == null || !_routeLayerExists) return;
 
       _dashOffset = (_dashOffset + 0.5) % 4.0; // wrap at (dash+gap) total
-
-      // lineDasharray trick:
-      //   [tiny, offset, dash, gap] is a 4-element array where:
-      //     element 0  = invisible start segment (we use this to shift phase)
-      //     element 1  = the gap before the first visible dash
-      //     element 2  = the visible dash
-      //     element 3  = the gap after the dash
-      //
-      // By increasing element 0 and decreasing element 1 by the same amount,
-      // the visible pattern shifts forward without changing the overall rhythm.
-      //
-      // _dashOffset goes 0 → 0.5 → 1.0 → ... → 3.5 → 0.0 → ...
       // so the dash appears to march continuously along the path.
       final double t = _dashOffset;
       mapController!.setLayerProperties(
@@ -796,34 +843,6 @@ class _MapViewState extends State<MapView> {
     );
     _startRerouteTimer();
   }
-  // void _startRouting() {
-  //   // 1. Ensure we have a start point
-  //   _startPoint =  _currentUserLocation;
-  //
-  //   if (_startPoint == null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("Start point not set yet. Waiting for GPS.")),
-  //     );
-  //     return;
-  //   }
-  //
-  //   // 2. Update state to show we are navigating
-  //   setState(() {
-  //     _isRouting = true;
-  //   });
-  //
-  //   // 3. Draw the path and move the camera
-  //   _makePath(_startPoint!, _endPoint!);
-  //   _tiltAndRotateCamera(_startPoint!, _endPoint!);
-  //
-  //   // 4. Shrink the pull-up menu down to 15% of the screen
-  //   _sheetController.animateTo(
-  //     0.15,
-  //     duration: const Duration(milliseconds: 300),
-  //     curve: Curves.easeInOut,
-  //   );
-  //   _startRerouteTimer();
-  // }
 
   Future<void> _updateRouteGeometry(List<ll2.LatLng> points) async {
     if (mapController == null || points.isEmpty) return;

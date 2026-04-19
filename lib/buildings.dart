@@ -127,7 +127,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A modern suite-style residence hall with geothermal heating and cooling. Also houses the RecB Fitness Center in its lower level, open to all students.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Suite-Style Rooms', 'RecB Fitness Center', 'Laundry', 'Geothermal Heating & Cooling'],
-    imagePaths: ['assets/images/building_photos/Hawthorn/Hawthorn_Inner.jpg'],
+    imagePaths: ['assets/images/building_photos/Hawthorn/Hawthorn-Inner.jpg'],
     location: ll2.LatLng(40.99908,-75.17233),
       tags: ['residence_hall']
   ),
