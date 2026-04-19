@@ -356,7 +356,7 @@ Map<String, BuildingInfo> buildingData = {
     facilities: ['Food Court (Center Court)', 'Barnes & Noble Bookstore', 'Commuter Lounge', 'Computer Lab/Lounge', 'Student Government Association Office', 'Student Activity Association Office'],
       imagePaths: ['assets/images/building_photos/UniversityCenter_New/UniversityCenter-Concept.jpg',
         'assets/images/building_photos/UniversityCenter_New/UniversityCenter_Entrance.jpg'],
-    location: ll2.LatLng(40.99604,-75.17384)
+    location: ll2.LatLng(40.995650,-75.173331)
   ),
 
   // --- ALUMNI ---
