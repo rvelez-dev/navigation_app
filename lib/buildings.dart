@@ -66,8 +66,9 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A traditional residence hall on campus housing ESU students. Features shared common areas and laundry facilities.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Laundry', 'Common Lounge', 'Vending Machines'],
-    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo
-    location: ll2.LatLng(40.99605,-75.17303)
+    imagePaths: ['assets/images/building_photos/Laurel-Front.jpg'],
+    location: ll2.LatLng(40.99605,-75.17303),
+      tags: ['residence_hall']
   ),
 
   'Shawnee Residence Hall': BuildingInfo(
@@ -75,8 +76,9 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A traditional residence hall providing on-campus housing for ESU students with shared common spaces.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Laundry', 'Common Lounge', 'Vending Machines'],
-    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo
-    location: ll2.LatLng(40.99598,-75.17213)
+    imagePaths: ['assets/images/building_photos/Shawnee/Shawnee-Front.jpg'],
+    location: ll2.LatLng(40.99598,-75.17213),
+      tags: ['residence_hall']
   ),
 
   'Minsi Residence Hall': BuildingInfo(
@@ -84,8 +86,9 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A traditional residence hall offering on-campus living for ESU students.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Laundry', 'Common Lounge', 'Vending Machines'],
-    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo
-    location: ll2.LatLng(40.99547,-75.17210)
+    imagePaths: ['assets/images/building_photos/Minsi/Minsi-Front.jpg'],
+    location: ll2.LatLng(40.99547,-75.17210),
+      tags: ['residence_hall']
   ),
 
   'Linden Residence Hall': BuildingInfo(
@@ -93,8 +96,9 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A traditional residence hall offering on-campus living for ESU students.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Laundry', 'Common Lounge', 'Vending Machines'],
-    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo
-    location: ll2.LatLng(40.99605, -75.17105)
+    imagePaths: ['assets/images/building_photos/Linden/Linden_Front.jpg'],
+    location: ll2.LatLng(40.99605, -75.17105),
+      tags: ['residence_hall']
   ),
 
   'Hemlock Suites': BuildingInfo(
@@ -102,9 +106,10 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A modern suite-style residence hall that also houses the University Police & Campus Information Center and the ESU Dining Services office.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Suite-Style Rooms', 'Laundry', 'Common Lounge', 'Geothermal Heating & Cooling'],
-    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo, include reslide office and police station
-    poi: ['University Police & Campus Information Center', 'ESU Dining Services Office'],
-    location: ll2.LatLng(40.99799,-75.17100)
+    imagePaths: ['assets/images/building_photos/Hemlock/Hemlock_Front.jpg',
+      'assets/images/building_photos/Hemlock/Hemlock_Quad.jpg'],
+    location: ll2.LatLng(40.99799,-75.17100),
+      tags: ['residence_hall']
   ),
 
   'Lenape Residence Hall': BuildingInfo(
@@ -112,8 +117,9 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A traditional residence hall offering on-campus living for ESU students.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Laundry', 'Common Lounge', 'Vending Machines'],
-    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'],//TODO take outdoor photo
-    location: ll2.LatLng(40.99866,-75.17193)
+    imagePaths: ['assets/images/building_photos/Lenape/Lenape-Front.jpg'],
+    location: ll2.LatLng(40.99866,-75.17193),
+      tags: ['residence_hall']
   ),
 
   'Hawthorn Suites': BuildingInfo(
@@ -121,8 +127,9 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A modern suite-style residence hall with geothermal heating and cooling. Also houses the RecB Fitness Center in its lower level, open to all students.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Suite-Style Rooms', 'RecB Fitness Center', 'Laundry', 'Geothermal Heating & Cooling'],
-    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo
-    location: ll2.LatLng(40.99908,-75.17233)
+    imagePaths: ['assets/images/building_photos/Hawthorn/Hawthorn_Inner.jpg'],
+    location: ll2.LatLng(40.99908,-75.17233),
+      tags: ['residence_hall']
   ),
 
   'Sycamore Suites': BuildingInfo(
@@ -130,9 +137,9 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A modern suite-style residence hall with geothermal heating and cooling. Houses student support services including Health & Wellness, Student Conduct, the Dean of Students, and the Title IX Coordinator.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Suite-Style Rooms', 'Laundry', 'Geothermal Heating & Cooling'],
-    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'], //TODO take outdoor photo, include the other facilities by parking lot also
-    poi: ['Health & Wellness Office', 'Dean of Students', 'Student Conduct & Community Standards', 'Title IX Coordinator'],
-    location: ll2.LatLng(40.99721,-75.17246)
+    imagePaths: ['assets/images/building_photos/Sycamore/Sycamore_Quad.jpg'],
+    location: ll2.LatLng(40.99721,-75.17246),
+    tags: ['residence_hall']
   ),
 
   // --- DINING ---
@@ -200,7 +207,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'Houses science laboratories and is home to ESU\'s Bloomberg Finance Lab, used for finance and business coursework.',
     hours: _weeklyHours(weekdayOpen: 7, weekdayClose: 18, weekendOpen: 0, weekendClose: 0), // 7am - 6pm weekdays, closed weekends
     facilities: ['Science Labs', 'Bloomberg Finance Lab', 'Classrooms'],
-    imagePaths: ['assets/images/building_photos/Placeholder/Placeholder.png'],//TODO take photo
+    imagePaths: ['assets/images/building_photos/Gessner/Gessner-Corner.jpg'],
     location: ll2.LatLng(40.9959637,-75.1748588)
   ),
 
@@ -258,7 +265,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'An outdoor pavilion on the ESU campus used for athletic and recreational activities.',
     hours: _weeklyHours(weekdayOpen: 7, weekdayClose: 18, weekendOpen: 0, weekendClose: 0), // 7am - 6pm weekdays, closed weekends
     facilities: ['Outdoor Space', 'Seating Area'],
-    imagePaths: [],//TODO take photo
+    imagePaths: ['assets/images/building_photos/DaveCarllyon/DaveC.jpg'],
     location: ll2.LatLng(40.9985246,-75.1728687)
   ),
 
@@ -314,7 +321,6 @@ Map<String, BuildingInfo> buildingData = {
     hours: _weeklyHours(weekdayOpen: 7, weekdayClose: 18, weekendOpen: 0, weekendClose: 0), // 7am - 6pm weekdays, closed weekends
     facilities: ['Conference Rooms', 'Event Space'],
     imagePaths: ['assets/images/building_photos/MulticulturalHouse/MulticulturalHouse-Front.jpg'],
-    poi: ['Conference Services Office', 'Multicultural Center'],
     location: ll2.LatLng(40.99587,-75.17637)
   ),
 
@@ -348,7 +354,8 @@ Map<String, BuildingInfo> buildingData = {
     description: 'The hub of student life at ESU. Features a food court (Center Court), a commuter lounge, a computer lab/lounge, meeting space for the Student Government Association, the Student Activity Association offices, and the ESU Barnes & Noble Bookstore.',
     hours: _weeklyHours(weekdayOpen: 7, weekdayClose: 18, weekendOpen: 0, weekendClose: 0), // 7am - 6pm weekdays, closed weekends (varies by vendor)
     facilities: ['Food Court (Center Court)', 'Barnes & Noble Bookstore', 'Commuter Lounge', 'Computer Lab/Lounge', 'Student Government Association Office', 'Student Activity Association Office'],
-    imagePaths: ['assets/images/building_photos/UniversityCenter_New/UniversityCenter-Concept.jpg'], //TODO take photos of new one
+      imagePaths: ['assets/images/building_photos/UniversityCenter_New/UniversityCenter-Concept.jpg',
+        'assets/images/building_photos/UniversityCenter_New/UniversityCenter_Entrance.jpg'],
     location: ll2.LatLng(40.99604,-75.17384)
   ),
 
