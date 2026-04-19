@@ -574,7 +574,7 @@ class _MapViewState extends State<MapView> {
         "tree-trunk-layer",
         FillExtrusionLayerProperties(
           fillExtrusionColor: "#3B1F0A",
-          fillExtrusionHeight: 2.5,
+          fillExtrusionHeight: 3.5,
           fillExtrusionBase: 0.0,
           fillExtrusionOpacity: 0.95,
           fillExtrusionVerticalGradient: true,
