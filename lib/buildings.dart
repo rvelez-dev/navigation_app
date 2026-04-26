@@ -55,7 +55,7 @@ Map<String, BuildingInfo> buildingData = {
     //what the building has to offer
     facilities: ['Study Rooms', 'Computer Lab', 'Tutoring Center', 'Printers'],
       //using image paths and converting them in mapview to be part of the gallery
-    imagePaths: ['assets/images/building_photos/Kemp-Library-Front.jpg'],
+    imagePaths: ['assets/images/building_photos/Kemp/Kemp-Library-Front.jpg'],
     location: ll2.LatLng(40.99830,-75.17031)
   ),
 // --- RESIDENCE HALLS (24-hour access) ---
@@ -96,7 +96,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'A traditional residence hall offering on-campus living for ESU students.',
     hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24-hour resident access
     facilities: ['Laundry', 'Common Lounge', 'Vending Machines'],
-    imagePaths: ['assets/images/building_photos/Linden/Linden_Front.jpg'],
+    imagePaths: ['assets/images/building_photos/Linden/Linden_Hall.jpg'],
     location: ll2.LatLng(40.99605, -75.17105),
       tags: ['residence_hall']
   ),
@@ -198,7 +198,7 @@ Map<String, BuildingInfo> buildingData = {
     description: 'Houses biology programs and features a large group lecture hall, a greenhouse, and a wildlife museum.',
     hours: _weeklyHours(weekdayOpen: 7, weekdayClose: 18, weekendOpen: 0, weekendClose: 0), // 7am - 6pm weekdays, closed weekends
     facilities: ['Lecture Hall', 'Greenhouse', 'Wildlife Museum', 'Labs'],
-    imagePaths: ['assets/images/building_photos/Moore/Moore-Front.jpg'],
+    imagePaths: ['assets/images/building_photos/Moore/Moore-Front.png'],
     location: ll2.LatLng(40.99631,-75.17498)
   ),
 

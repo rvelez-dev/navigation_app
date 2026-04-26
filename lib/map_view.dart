@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:latlong2/latlong.dart' as ll2;
 import 'campus_dropdown.dart'; // calling dropdown class
 import 'package:flutter/material.dart';
@@ -39,9 +40,6 @@ class _MapViewState extends State<MapView> {
   bool _autoCenter = true;
   ll2.LatLng? _currentUserLocation;
 
-  // how close a tap needs to be to a buildings coordinate to select it
-  static const double _buildingTapRadiusMeters = 40.0;
-
   String? _selectedDestinationName;
   bool _isRouting = false;
   //popup menu for building info, starting route,see walking time estimate etc.
@@ -49,6 +47,9 @@ class _MapViewState extends State<MapView> {
 
   //location package
   final Location _location = Location();
+
+  //holds all the 2d polygons from building geojson files
+  List<Map<String, dynamic>> _buildingPolygons = [];
 
   //Debounce timers to prevent excessive setState calls
   Timer? _locationUpdateTimer;
@@ -61,6 +62,50 @@ class _MapViewState extends State<MapView> {
   Timer?  _animationTimer;
   double  _dashOffset = 0;
   bool    _routeLayerExists = false;
+
+  //track the finger position
+  Offset? _pointerDownPosition;
+  //time tracking to catch drags
+  DateTime? _pointerDownTime;
+
+  //puts directional labels over designated buildings
+  static const Map<String,dynamic> _buildingLabelsData = {
+    "type": "FeatureCollection",
+    "features": [
+      { "type": "Feature", "properties": { "name": "Eiler-Martin Stadium" }, "geometry": { "type": "Point", "coordinates": [-75.1727, 40.9936] } },
+      { "type": "Feature", "properties": { "name": "Dansbury Commons" }, "geometry": { "type": "Point", "coordinates": [-75.1736, 40.9970] } },
+      { "type": "Feature", "properties": { "name": "Flagler-Metzgar Center" }, "geometry": { "type": "Point", "coordinates": [-75.1729, 40.9970] } },
+      { "type": "Feature", "properties": { "name": "Monroe Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1727, 40.9951] } },
+      { "type": "Feature", "properties": { "name": "Koehler Fieldhouse and Natatorium" }, "geometry": { "type": "Point", "coordinates": [-75.1703, 40.9968] } },
+      { "type": "Feature", "properties": { "name": "Kemp Library" }, "geometry": { "type": "Point", "coordinates": [-75.1701, 40.9984] } },
+      { "type": "Feature", "properties": { "name": "Mattioli Recreation Center" }, "geometry": { "type": "Point", "coordinates": [-75.1701, 40.9953] } },
+      { "type": "Feature", "properties": { "name": "Beers Lecture Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1749, 40.9955] } },
+      { "type": "Feature", "properties": { "name": "Reibman Administration Building" }, "geometry": { "type": "Point", "coordinates": [-75.1768, 40.9957] } },
+      { "type": "Feature", "properties": { "name": "Moore Biology Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1749, 40.9965] } },
+      { "type": "Feature", "properties": { "name": "Gessner" }, "geometry": { "type": "Point", "coordinates": [-75.1751, 40.9958] } },
+      { "type": "Feature", "properties": { "name": "Sci-Tech Center" }, "geometry": { "type": "Point", "coordinates": [-75.1758, 40.9965] } },
+      { "type": "Feature", "properties": { "name": "Stroud Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1741, 40.99545] } },
+      { "type": "Feature", "properties": { "name": "University Center"} , "geometry": { "type": "Point", "coordinates": [-75.1738, 40.9961] } },
+      { "type": "Feature", "properties": { "name": "University Center (soon)"} , "geometry": { "type": "Point", "coordinates": [-75.17363, 40.99553] } },
+      { "type": "Feature", "properties": { "name": "Laurel Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1730, 40.9961] } },
+      { "type": "Feature", "properties": { "name": "Shawnee Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1720, 40.9960] } },
+      { "type": "Feature", "properties": { "name": "Minsi Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1718, 40.9954] } },
+      { "type": "Feature", "properties": { "name": "Linden Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1711, 40.9961] } },
+      { "type": "Feature", "properties": { "name": "Hemlock Suites" }, "geometry": { "type": "Point", "coordinates": [-75.1713, 40.9978] } },
+      { "type": "Feature", "properties": { "name": "Lenape Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1720, 40.9986] } },
+      { "type": "Feature", "properties": { "name": "Hawthorn Suites" }, "geometry": { "type": "Point", "coordinates": [-75.1727, 40.9991] } },
+      { "type": "Feature", "properties": { "name": "Sycamore Suites" }, "geometry": { "type": "Point", "coordinates": [-75.1722, 40.9974] } },
+      { "type": "Feature", "properties": { "name": "Abeloff" }, "geometry": { "type": "Point", "coordinates": [-75.175136, 40.994328] } },
+      { "type": "Feature", "properties": { "name": "Wess 90.3 Radio" }, "geometry": { "type": "Point", "coordinates": [-75.1738, 40.9949] } },
+      { "type": "Feature", "properties": { "name": "Zimbar-Liljenstein Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1735, 40.9938] } },
+      { "type": "Feature", "properties": { "name": "Rosenkrans" }, "geometry": { "type": "Point", "coordinates": [-75.174627, 40.994553] } },
+      { "type": "Feature", "properties": { "name": "DeNike" }, "geometry": { "type": "Point", "coordinates": [-75.17602, 40.994049] } },
+      { "type": "Feature", "properties": { "name": "Innovation Center" }, "geometry": { "type": "Point", "coordinates": [-75.1783, 40.9946] } },
+      { "type": "Feature", "properties": { "name": "Facilities Management" }, "geometry": { "type": "Point", "coordinates": [-75.1768, 40.9975] } },
+      { "type": "Feature", "properties": { "name": "University Ridge" }, "geometry": { "type": "Point", "coordinates": [-75.1834, 40.9900] } },
+      { "type": "Feature", "properties": { "name": "Fine and Performing Arts" }, "geometry": { "type": "Point", "coordinates": [-75.166295, 40.998738] } }
+    ]
+  };
 
   @override
   void initState() {
@@ -86,6 +131,7 @@ class _MapViewState extends State<MapView> {
     await Future.wait([
       _initializeRouting(),
       _requestLocationPermissionAndCenter(),
+      _loadBuildingPolygons(),
     ]);
   }
 
@@ -283,118 +329,51 @@ class _MapViewState extends State<MapView> {
     return true;
   }
 
-  //Handle the Tap Logic
-  Future<void> _onMapTap(ll2.LatLng point) async {
-    if (!_isGraphLoaded) return; // Don't allow taps until data is ready
-    //debugPrint("Debug: _onMapTap: entered");
-    if (_currentUserLocation == null) {
-      final LocationData forcedLoc = await _location.getLocation();
-      if (forcedLoc.latitude != null && mounted) {
-        setState(() {
-          _currentUserLocation = ll2.LatLng(forcedLoc.latitude!, forcedLoc.longitude!);
-        });
-      }
-    }
+// Ray casting algorithm — returns true if [point] is inside [polygon]
+// polygon is a list of [lng, lat] pairs (GeoJSON order)
+  bool _pointInPolygon(ll2.LatLng point, List<dynamic> polygon) {
+    final double px = point.longitude;
+    final double py = point.latitude;
+    bool inside = false;
+    int j = polygon.length - 1;
 
-    //Calculate route outside setState, then update once
-    ll2.LatLng? newStart;
-    ll2.LatLng? newEnd;
+    for (int i = 0; i < polygon.length; i++) {
+      final double xi = (polygon[i][0] as num).toDouble(); // lng
+      final double yi = (polygon[i][1] as num).toDouble(); // lat
+      final double xj = (polygon[j][0] as num).toDouble();
+      final double yj = (polygon[j][1] as num).toDouble();
 
-    //gps is start, tap is always the destination
-    if(_currentUserLocation == null) {
-      if(mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("Debug: _onMapTap: GPS location not found")),
-        );
-      }
-      return;
+      final bool intersects = ((yi > py) != (yj > py)) &&
+          (px < (xj - xi) * (py - yi) / (yj - yi) + xi);
+      if (intersects) inside = !inside;
+      j = i;
     }
-    //set destination to tap point
-    debugPrint("Debug: _onMapTap: GPS mode on -> location found");
-    newStart = _currentUserLocation;
-    newEnd = point;
-    if(mounted){
-      setState(() {
-        _startPoint = newStart;
-        _endPoint = newEnd;
-      });
-    }
-    if (_startPoint != null && _endPoint != null) {
-      debugPrint("Debug: _onMapTap: drawing path from $_startPoint to $_endPoint");
-      _makePath(_startPoint!, _endPoint!); // Updates the route line
-    }
+    debugPrint("Debug (_pointInPolygon): inside: $inside");
+    return inside;
   }
 
-  //This handles the click from MapLibre and converts it for RoutingService
-  void _handleMapTap(LatLng mapLibrePoint) {
-    // Convert MapLibre LatLng to your existing ll2.LatLng format
-    final convertedPoint = ll2.LatLng(
-        mapLibrePoint.latitude,
-        mapLibrePoint.longitude
-    );
-    debugPrint("Debug: _handleMapTap: user tapped point: $convertedPoint");
+  String? _findTappedBuilding(ll2.LatLng tapPoint) {
+    debugPrint("Debug (_findTappedBuilding): Finding tapped building");
+    for (final building in _buildingPolygons) {
+      final geometry = building['geometry'] as Map<String, dynamic>;
+      final type = geometry['type'] as String;
+      final coords = geometry['coordinates'] as List<dynamic>;
 
-    // Now call your existing logic that handles routing and markers
-    _onMapTap(convertedPoint);
-  }
+      // Both Polygon and MultiPolygon — check each ring
+      final List<dynamic> rings = type == 'MultiPolygon'
+          ? (coords[0] as List<dynamic>) // first polygon of multipolygon
+          : coords;
 
-  /*// Checks if [tapPoint] is within [_buildingTapRadiusMeters] of any known
-  // building label. Returns the building name string, or null if nothing is close.
-  String? _findNearestBuilding(ll2.LatLng tapPoint) {
-    const ll2.Distance distCalc = ll2.Distance();
-    String? closestName;
-    double closestDist = double.infinity;
-
-    // _buildingLabelsData["features"] is the list of all labelled buildings
-    final features = _buildingLabelsData["features"] as List<dynamic>;
-
-    for (final feature in features) {
-      final coords = feature["geometry"]["coordinates"] as List<dynamic>;
-      final buildingLatLng = ll2.LatLng(
-        (coords[1] as num).toDouble(),   // latitude
-        (coords[0] as num).toDouble(),   // longitude
-      );
-
-      final double dist = distCalc.as(
-        ll2.LengthUnit.Meter,
-        tapPoint,
-        buildingLatLng,
-      );
-
-      if (dist < closestDist) {
-        closestDist = dist;
-        closestName = feature["properties"]["name"] as String?;
+      final outerRing = rings[0] as List<dynamic>;
+      if (_pointInPolygon(tapPoint, outerRing)) {
+        debugPrint('Tapped inside: ${building['name']}');
+        debugPrint("Debug (_findTappedBuilding): tapped building: ${building['name']}");
+        return building['name'] as String;
       }
     }
-
-    // Only return a hit if it's actually close enough
-    if (closestDist <= _buildingTapRadiusMeters) {
-      return closestName;
-    }
+    debugPrint("Debug (_findTappedBuilding): Found nothing :| ");
     return null;
   }
-
-// Replace your existing _handleMapTap with this:
-  void _handleMapTap(LatLng mapLibrePoint) {
-    final convertedPoint = ll2.LatLng(
-      mapLibrePoint.latitude,
-      mapLibrePoint.longitude,
-    );
-    debugPrint("Debug: _handleMapTap: user tapped point: $convertedPoint");
-
-    // 1. Check if the tap landed on (or near) a known building
-    final String? tappedBuilding = _findNearestBuilding(convertedPoint);
-
-    if (tappedBuilding != null) {
-      debugPrint("Debug: _handleMapTap: tapped building '$tappedBuilding'");
-      // 2. Use the same path as the dropdown — opens the sheet menu
-      _handleLocationSelection(tappedBuilding);
-    }/* else {
-      // 3. Tapped open ground, keep existing raw routing behavior
-      _onMapTap(convertedPoint);
-    }*/
-  }*/
 
   //bearing to change camera angle towards location
   void _tiltAndRotateCamera(ll2.LatLng start, ll2.LatLng destination) {
@@ -418,8 +397,59 @@ class _MapViewState extends State<MapView> {
     );
   }
 
+  //loads in building polygon data form geojsons
+  Future<void> _loadBuildingPolygons() async {
+    final List<Map<String, dynamic>> all = [];
+
+    for (final path in [
+      'assets/esu_jsons/campusbuildings.geojson',
+      'assets/esu_jsons/apartments.geojson',
+      'assets/esu_jsons/dorms.geojson',
+    ]) {
+      try {
+        final String raw = await rootBundle.loadString(path);
+        final Map<String, dynamic> fc = json.decode(raw);
+        for (final feature in fc['features'] as List<dynamic>) {
+          final name = feature['properties']['name'] as String?;
+          if (name == null) continue;
+          // Resolve the name to the exact buildingData key
+          final resolvedName = _resolveBuildingName(name);
+          if (resolvedName == null) continue;
+          final geometry = feature['geometry'] as Map<String, dynamic>;
+          all.add({'name': resolvedName, 'geometry': geometry});
+        }
+        debugPrint('Loaded ${fc['features'].length} features from $path');
+      } catch (e) {
+        debugPrint('Error loading $path: $e');
+      }
+    }
+
+    setState(() => _buildingPolygons = all);
+    debugPrint('Loaded ${all.length} building polygons');
+  }
+
+  //helps to make matches between data
+  String? _resolveBuildingName(String osmName) {
+    // Exact match first
+    if (buildingData.containsKey(osmName)) return osmName;
+    // Case-insensitive fallback
+    final lower = osmName.toLowerCase();
+    for (final key in buildingData.keys) {
+      if (key.toLowerCase() == lower) return key;
+    }
+    // Partial match — OSM name contains your key or vice versa
+    for (final key in buildingData.keys) {
+      if (lower.contains(key.toLowerCase()) || key.toLowerCase().contains(lower)) {
+        debugPrint('Debug(_resolveBuildingName): Matched $osmName to $key');
+        return key;
+      }
+    }
+    debugPrint('Debug(_resolveBuildingName): No buildingData match for OSM name: "$osmName"');
+    return null;
+  }
+
   //puts 3d buildings on map
-  //NOTE: need to remove demolished computing center from map
+  ///NOTE: need to remove demolished computing center from map
   Future <void> _add3DBuildingsLayer() async {
     // Check if the controller is ready
     if (mapController == null) return;
@@ -454,55 +484,7 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  //puts directional labels over designated buildings
-  //TODO convert back to geojson and use method learned from fixing grass layer
-  static const Map<String,dynamic> _buildingLabelsData = {
-    //if (mapController == null) return;
 
-   // try {
-      // 1. Add Source
-      //await mapController!.addSource("building-labels-source", GeojsonSourceProperties(
-          //data: {
-            "type": "FeatureCollection",
-            "features": [
-              { "type": "Feature", "properties": { "name": "Eiler-Martin Stadium" }, "geometry": { "type": "Point", "coordinates": [-75.1727, 40.9936] } },
-              { "type": "Feature", "properties": { "name": "Dansbury Commons" }, "geometry": { "type": "Point", "coordinates": [-75.1736, 40.9970] } },
-              { "type": "Feature", "properties": { "name": "Flagler-Metzgar Center" }, "geometry": { "type": "Point", "coordinates": [-75.1729, 40.9970] } },
-              { "type": "Feature", "properties": { "name": "Monroe Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1727, 40.9951] } },
-              { "type": "Feature", "properties": { "name": "Koehler Fieldhouse and Natatorium" }, "geometry": { "type": "Point", "coordinates": [-75.1703, 40.9968] } },
-              { "type": "Feature", "properties": { "name": "Kemp Library" }, "geometry": { "type": "Point", "coordinates": [-75.1701, 40.9984] } },
-              { "type": "Feature", "properties": { "name": "Mattioli Recreation Center" }, "geometry": { "type": "Point", "coordinates": [-75.1701, 40.9953] } },
-              //{ "type": "Feature", "properties": { "name": "Computing Center" }, "geometry": { "type": "Point", "coordinates": [-75.1745, 40.9959] } },
-              { "type": "Feature", "properties": { "name": "Beers Lecture Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1749, 40.9955] } },
-              { "type": "Feature", "properties": { "name": "Reibman Administration Building" }, "geometry": { "type": "Point", "coordinates": [-75.1768, 40.9957] } },
-              { "type": "Feature", "properties": { "name": "Moore Biology Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1749, 40.9965] } },
-              { "type": "Feature", "properties": { "name": "Gessner" }, "geometry": { "type": "Point", "coordinates": [-75.1751, 40.9958] } },
-              { "type": "Feature", "properties": { "name": "Sci-Tech Center" }, "geometry": { "type": "Point", "coordinates": [-75.1758, 40.9965] } },
-              { "type": "Feature", "properties": { "name": "Stroud Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1741, 40.99545] } },
-              { "type": "Feature", "properties": { "name": "University Center"} , "geometry": { "type": "Point", "coordinates": [-75.1738, 40.9961] } },
-              { "type": "Feature", "properties": { "name": "University Center (soon)"} , "geometry": { "type": "Point", "coordinates": [-75.17363, 40.99553] } },
-              { "type": "Feature", "properties": { "name": "Laurel Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1730, 40.9961] } },
-              { "type": "Feature", "properties": { "name": "Shawnee Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1720, 40.9960] } },
-              { "type": "Feature", "properties": { "name": "Minsi Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1718, 40.9954] } },
-              { "type": "Feature", "properties": { "name": "Linden Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1711, 40.9961] } },
-              { "type": "Feature", "properties": { "name": "Hemlock Suites" }, "geometry": { "type": "Point", "coordinates": [-75.1713, 40.9978] } },
-              { "type": "Feature", "properties": { "name": "Lenape Residence Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1720, 40.9986] } },
-              { "type": "Feature", "properties": { "name": "Hawthorn Suites" }, "geometry": { "type": "Point", "coordinates": [-75.1727, 40.9991] } },
-              { "type": "Feature", "properties": { "name": "Sycamore Suites" }, "geometry": { "type": "Point", "coordinates": [-75.1722, 40.9974] } },
-              { "type": "Feature", "properties": { "name": "Abeloff" }, "geometry": { "type": "Point", "coordinates": [-75.175136, 40.994328] } },
-              { "type": "Feature", "properties": { "name": "Wess 90.3 Radio" }, "geometry": { "type": "Point", "coordinates": [-75.1738, 40.9949] } },
-              { "type": "Feature", "properties": { "name": "Zimbar-Liljenstein Hall" }, "geometry": { "type": "Point", "coordinates": [-75.1735, 40.9938] } },
-              { "type": "Feature", "properties": { "name": "Rosenkrans" }, "geometry": { "type": "Point", "coordinates": [-75.174627, 40.994553] } },
-              { "type": "Feature", "properties": { "name": "DeNike" }, "geometry": { "type": "Point", "coordinates": [-75.17602, 40.994049] } },
-              { "type": "Feature", "properties": { "name": "Innovation Center" }, "geometry": { "type": "Point", "coordinates": [-75.1783, 40.9946] } },
-              { "type": "Feature", "properties": { "name": "Facilities Management" }, "geometry": { "type": "Point", "coordinates": [-75.1768, 40.9975] } },
-              { "type": "Feature", "properties": { "name": "University Ridge" }, "geometry": { "type": "Point", "coordinates": [-75.1834, 40.9900] } },
-              { "type": "Feature", "properties": { "name": "Fine and Performing Arts" }, "geometry": { "type": "Point", "coordinates": [-75.166295, 40.998738] } }
-
-            ]
-          };
-      //));
-      //debugPrint("Source added.");
   Future<void> _addLabelsLayer() async {
     if (mapController == null) return;
 
@@ -552,7 +534,6 @@ class _MapViewState extends State<MapView> {
 
   //adding grass layer to app
   Future <void> _addGrassLayer() async {
-
     if(mapController == null ) return;
 
     try{
@@ -577,14 +558,13 @@ class _MapViewState extends State<MapView> {
       const FillLayerProperties(
         fillColor: "#BEE7A5",
         fillOpacity: 0.5,
-
       ),
         //adding below all layers
-        belowLayerId: "building"
+        belowLayerId: "building",
       );
       final layers = await mapController!.getLayerIds();
-      debugPrint("all layers after adding grass: $layers");
-      debugPrint("full layer list: $layers");
+      //debugPrint("all layers after adding grass: $layers");
+      //debugPrint("full layer list: $layers");
       //debugPrint("Grass GeoJSON preview: ${grassJSON.substring(0, 300)}");
       debugPrint("Grass layer added successfully");
     }catch (e){
@@ -880,7 +860,7 @@ class _MapViewState extends State<MapView> {
   Future<void> _addDestinationMarker(ll2.LatLng location) async {
     if (mapController == null) return;
 
-    // Remove layer FIRST (must happen before removing source)
+    // Remove layer (must happen before removing source)
     try {
       final layers = await mapController!.getLayerIds();
       if (layers.contains("destination-pin")) {
@@ -893,7 +873,7 @@ class _MapViewState extends State<MapView> {
       debugPrint("Error removing destination layers: $e");
     }
 
-    // THEN remove source
+    // remove source
     try {
       final sources = await mapController!.getSourceIds();
       if (sources.contains("destination-source")) {
@@ -903,7 +883,7 @@ class _MapViewState extends State<MapView> {
       debugPrint("Error removing destination source: $e");
     }
 
-    // 2. Add a GeoJSON source for the single point
+    // add a GeoJSON source for the single point
     await mapController?.addSource("destination-source", GeojsonSourceProperties(
         data: {
           "type": "FeatureCollection",
@@ -917,7 +897,7 @@ class _MapViewState extends State<MapView> {
         }
     ));
 
-    // 3. Add a Circle Layer (guaranteed to render)
+    // add a Circle Layer (guaranteed to render)
     await mapController?.addCircleLayer(
       "destination-source",
       "destination-pin",
@@ -935,13 +915,14 @@ class _MapViewState extends State<MapView> {
       SymbolLayerProperties(
         iconImage: "warrior_logo", // matches the name you gave in Step 4
         iconSize: 0.35,       // Adjust based on how big your PNG is
-        iconAnchor: "bottom", // IMPORTANT: puts the tip of the pin on the spot
+        iconAnchor: "bottom", // puts the tip of the pin on the spot
         iconAllowOverlap: true,
       ),
     );
   }
 
   void _handleLocationSelection(String destination) {
+
     final ll2.LatLng? endpoint = buildingData[destination]?.location;
 
     if (endpoint == null) {
@@ -1000,18 +981,29 @@ class _MapViewState extends State<MapView> {
     await _addImageFromAsset("info_icon", "assets/images/info_icon.png");
 
     //add all layers concurrently instead of sequentially
-    try {
+    /*try {
       await Future.wait([
-        //2. adding grass layer
+        //adding grass layer
         _addGrassLayer(),
         //adding tree layer
         _addTreeLayer(),
-        // 2. Add 3D buildings
-      _add3DBuildingsLayer(),
-      // 3. create layers for the user, route, and blue dot
-       _addLabelsLayer(),
+        //add 3D buildings
+        _add3DBuildingsLayer(),
+        //add clickable fill layer of building polygons
+        _addBuildingTapLayer(),
+        //place labels above 3d buildings
+        _addLabelsLayer(),
       ]);
     }catch (e){
+      debugPrint("Error during layer initialization: $e");
+    }*/
+    //add layers one-by-one to control the Z-Index (Bottom to Top)
+    try {
+       await _addGrassLayer();
+       await _addTreeLayer();
+       await _add3DBuildingsLayer();
+       await _addLabelsLayer();
+    } catch (e) {
       debugPrint("Error during layer initialization: $e");
     }
     // 4. Enable the blue dot now that the style is ready. Check permission one last time before telling the map to show the dot
@@ -1035,7 +1027,6 @@ class _MapViewState extends State<MapView> {
     } else {
       debugPrint("Location permission not granted yet - blue dot suppressed");
     }
-    // 4. Enable the blue dot now that the style is ready
     /*Future.delayed(const Duration(milliseconds: 200), () {
       if (mapController != null) {
         // This forces the "Blue Dot" engine to start
@@ -1112,34 +1103,123 @@ class _MapViewState extends State<MapView> {
       body: Stack(
         children: [
           // 1. The Map (Bottom Layer)
-          MapLibreMap(
-            //enable the geolocation feature
-            cameraTargetBounds: CameraTargetBounds(LatLngBounds(
-              southwest: const LatLng(40.99203,-75.17833),
-              northeast: const LatLng(40.9997558, -75.1597061),
-            )),
-            minMaxZoomPreference: const MinMaxZoomPreference(14.0, 21.0),
-            myLocationEnabled: _showBlueDot,
-            myLocationRenderMode: MyLocationRenderMode.normal, // Makes it follow you
-            // Set tracking to None initially so it doesn't 'search' for GPS
-            // before the native code is ready
-            myLocationTrackingMode: MyLocationTrackingMode.none,
+          Listener(
+            onPointerDown: (PointerDownEvent event) {
+              // Record where the finger first touched the screen
+              _pointerDownPosition = event.localPosition;
+              _pointerDownTime = DateTime.now();
+            },
+            onPointerUp: (PointerUpEvent event) async {
+              if (_pointerDownPosition == null || mapController == null) return;
 
-            styleString: "https://tiles.openfreemap.org/styles/bright",
+              // Check if the user tapped or dragged (panned the map).
+              // If they moved their finger more than 10 pixels, it's a map pan, so ignore it.
+              final distance = (event.localPosition - _pointerDownPosition!).distance;
+              final elapsed = DateTime.now().difference(_pointerDownTime!);
+              if (elapsed.inMilliseconds > 300 || distance > 10.0) return;
 
-            initialCameraPosition: const CameraPosition(
-              target: LatLng(40.9959155, -75.173446),
-              zoom: 17.0,
-              tilt: 60,
+              debugPrint("flutter tap at ${event.localPosition}");
+
+              // Convert Flutter Offset to MapLibre Point
+              final dpr = MediaQuery.of(context).devicePixelRatio; //device pixel ratio, using to beat offset issues
+              final screenPoint = Point<double>(
+                  event.localPosition.dx * dpr,
+                  event.localPosition.dy * dpr);
+
+              final LatLng mapPoint = await mapController!.toLatLng(screenPoint);
+              debugPrint("flutter tap map point: $mapPoint");
+
+              // Run your existing ray-cast hit test
+              final convertedPoint = ll2.LatLng(mapPoint.latitude, mapPoint.longitude);
+              final tappedBuilding = _findTappedBuilding(convertedPoint);
+
+              if (tappedBuilding != null) {
+                debugPrint("Hit building: $tappedBuilding");
+                _handleLocationSelection(tappedBuilding);
+              } else {
+                debugPrint("No building at tap location");
+              }
+              /*try {
+                // Force MapLibre to tell us what is at this exact pixel coordinate,
+                // looking ONLY for your red 3D tap layer.
+                final features = await mapController!.queryRenderedFeatures(
+                  screenPoint,
+                  ['building-tap-layer'],
+                  null,
+                );
+
+                if (features.isNotEmpty) {
+                  final tappedBuilding = features.first['properties']?['name'];
+                  debugPrint("🎯 SUCCESS Hit: $tappedBuilding");
+
+                  if (tappedBuilding != null) {
+                    _handleLocationSelection(tappedBuilding);
+                  }
+                } else {
+                  debugPrint("Missed the red box.");
+                }
+              } catch (e) {
+                debugPrint("Query error: $e");
+              }*/
+            },
+            child: MapLibreMap(
+              //enable the geolocation feature
+              cameraTargetBounds: CameraTargetBounds(LatLngBounds(
+                southwest: const LatLng(40.99203,-75.17833),
+                northeast: const LatLng(40.9997558, -75.1597061),
+              )),
+              minMaxZoomPreference: const MinMaxZoomPreference(14.0, 21.0),
+              myLocationEnabled: _showBlueDot,
+              myLocationRenderMode: MyLocationRenderMode.normal, // Makes it follow you
+              // Set tracking to None initially so it doesn't 'search' for GPS
+              // before the native code is ready
+              myLocationTrackingMode: MyLocationTrackingMode.none,
+
+              styleString: "https://tiles.openfreemap.org/styles/bright",
+
+              initialCameraPosition: const CameraPosition(
+                target: LatLng(40.9959155, -75.173446),
+                zoom: 17.0,
+                tilt: 60,
+              ),
+
+              onMapCreated: (controller) => mapController = controller,
+              onStyleLoadedCallback: _onStyleLoaded,
+              //onMapClick: (point, latlng) => _handleMapTap(latlng),
+              //onMapClick: (point, latlng) => _handleMapTap(point, latlng),
+              /*onMapClick: (Point<double> screenPoint, LatLng mapPoint) async {
+                debugPrint("TAP FIRED at screen=$screenPoint map=$mapPoint");
+                if (mapController == null) return;
+
+                try {
+                  // 1. Query the exact Point, not a Rect.
+                  // This avoids Flutter Device Pixel Ratio offset bugs.
+                  final features = await mapController!.queryRenderedFeatures(
+                    screenPoint,            // Pass the point directly
+                    ['building-tap-layer'], // Only look for your red hitboxes
+                    null,
+                  );
+
+                  if (features.isNotEmpty) {
+                    final String? tappedBuilding = features.first['properties']?['name'];
+
+                    if (tappedBuilding != null) {
+                      debugPrint("SUCCESS! Hit building: $tappedBuilding");
+                      _handleLocationSelection(tappedBuilding);
+                      return;
+                    }
+                  }
+
+                  debugPrint("Missed the Red Box. Map Point: ${mapPoint.latitude}, ${mapPoint.longitude}");
+                  debugPrint("features size: ${features.length}");
+                } catch (e) {
+                  debugPrint("Query error: $e");
+                }
+              },*/
+              rotateGesturesEnabled: true,
+              tiltGesturesEnabled: true,
             ),
-
-            onMapCreated: (controller) => mapController = controller,
-            onStyleLoadedCallback: _onStyleLoaded,
-            onMapClick: (point, latlng) => _handleMapTap(latlng),
-            rotateGesturesEnabled: true,
-            tiltGesturesEnabled: true,
           ),
-
           // 2. The Dropdown (Top Layer)
           // positioning of search bar
           Positioned(
