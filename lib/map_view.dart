@@ -964,6 +964,48 @@ class _MapViewState extends State<MapView> {
     }
   }
 
+  Future<void> _clearDestination() async {
+    //Stop timers and animations
+    _stopRerouteTimer();
+    _routeUpdateTimer?.cancel();
+    _stopRouteAnimation();
+
+    //Remove map layers and sources
+    if (mapController != null) {
+      try { await mapController!.removeLayer("animated-route"); } catch (e) {
+        debugPrint("Error removing animated-route layer: $e");
+      }
+      try { await mapController!.removeLayer("route-layer"); } catch (e) {
+        debugPrint("Error removing route layer: $e");
+      }
+      try { await mapController!.removeSource("route-source"); } catch (e) {
+        debugPrint("Error removing route source: $e");
+      }
+      try{ await mapController!.removeLayer("destination-pin"); } catch (e) {
+        debugPrint("Error removing destination pin layer: $e");
+      }
+      try{ await mapController!.removeLayer("endpoint_logo"); } catch (e) {
+        debugPrint("Error removing endpoint logo layer: $e");
+      }
+      try { await mapController!.removeSource("destination-source"); } catch (e) {
+        debugPrint("Error removing destination source: $e");
+      }
+    }
+    _routeLayerExists = false;
+
+    //Reset state
+    if (mounted) {
+      setState(() {
+        //null out / reset all the state variables
+        _selectedDestinationName = null;
+        _endPoint = null;
+        _isRouting = false;
+        _routePolyline = [];
+        _walkingTimeEstimate = "";
+      });
+    }
+  }
+
   Future<void> _addImageFromAsset(String name, String assetName) async {
     final ByteData bytes = await rootBundle.load(assetName);
     final Uint8List list = bytes.buffer.asUint8List();
@@ -981,7 +1023,7 @@ class _MapViewState extends State<MapView> {
     await _addImageFromAsset("info_icon", "assets/images/info_icon.png");
 
     //add all layers concurrently instead of sequentially
-    /*try {
+    try {
       await Future.wait([
         //adding grass layer
         _addGrassLayer(),
@@ -989,24 +1031,13 @@ class _MapViewState extends State<MapView> {
         _addTreeLayer(),
         //add 3D buildings
         _add3DBuildingsLayer(),
-        //add clickable fill layer of building polygons
-        _addBuildingTapLayer(),
         //place labels above 3d buildings
         _addLabelsLayer(),
       ]);
     }catch (e){
       debugPrint("Error during layer initialization: $e");
-    }*/
-    //add layers one-by-one to control the Z-Index (Bottom to Top)
-    try {
-       await _addGrassLayer();
-       await _addTreeLayer();
-       await _add3DBuildingsLayer();
-       await _addLabelsLayer();
-    } catch (e) {
-      debugPrint("Error during layer initialization: $e");
     }
-    // 4. Enable the blue dot now that the style is ready. Check permission one last time before telling the map to show the dot
+    //Enable the blue dot now that the style is ready. Check permission one last time before telling the map to show the dot
     PermissionStatus permissionStatus = await _location.hasPermission();
 
     if (permissionStatus == PermissionStatus.granted && mounted) {
@@ -1016,33 +1047,13 @@ class _MapViewState extends State<MapView> {
       setState(() {
         _showBlueDot = true;
       });
-      // We give the engine a small delay to process the state change
-      //Future.delayed(const Duration(milliseconds: 500), () async {
-        if (mapController != null) {
-          // This 'kickstarts' the native location renderer
-          await mapController!.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
-          //debugPrint("Blue dot engine successfully kickstarted.");
-        }
-      //});
+      if (mapController != null) {
+        // start native location renderer
+        await mapController!.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
+      }
     } else {
       debugPrint("Location permission not granted yet - blue dot suppressed");
     }
-    /*Future.delayed(const Duration(milliseconds: 200), () {
-      if (mapController != null) {
-        // This forces the "Blue Dot" engine to start
-        mapController!.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
-      }
-    });*/
-
-    /*building info debug check ups
-    // Iterate over all buildings (e.g. to place map markers)
-    buildingData.forEach((name, info) {
-      debugPrint('${info.name} is at ${info.location}');
-    });
-
-    // Check how many buildings you have
-    debugPrint('$buildingData.length');
-     */
   }
 
   Widget _buildAboutSection() {
@@ -1056,7 +1067,6 @@ class _MapViewState extends State<MapView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        //_buildImageGallery(info.imagePaths),
         Text(info.description, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
         const SizedBox(height: 10),
         const Text("Hours:", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -1139,28 +1149,6 @@ class _MapViewState extends State<MapView> {
               } else {
                 debugPrint("No building at tap location");
               }
-              /*try {
-                // Force MapLibre to tell us what is at this exact pixel coordinate,
-                // looking ONLY for your red 3D tap layer.
-                final features = await mapController!.queryRenderedFeatures(
-                  screenPoint,
-                  ['building-tap-layer'],
-                  null,
-                );
-
-                if (features.isNotEmpty) {
-                  final tappedBuilding = features.first['properties']?['name'];
-                  debugPrint("🎯 SUCCESS Hit: $tappedBuilding");
-
-                  if (tappedBuilding != null) {
-                    _handleLocationSelection(tappedBuilding);
-                  }
-                } else {
-                  debugPrint("Missed the red box.");
-                }
-              } catch (e) {
-                debugPrint("Query error: $e");
-              }*/
             },
             child: MapLibreMap(
               //enable the geolocation feature
@@ -1182,40 +1170,8 @@ class _MapViewState extends State<MapView> {
                 zoom: 17.0,
                 tilt: 60,
               ),
-
               onMapCreated: (controller) => mapController = controller,
               onStyleLoadedCallback: _onStyleLoaded,
-              //onMapClick: (point, latlng) => _handleMapTap(latlng),
-              //onMapClick: (point, latlng) => _handleMapTap(point, latlng),
-              /*onMapClick: (Point<double> screenPoint, LatLng mapPoint) async {
-                debugPrint("TAP FIRED at screen=$screenPoint map=$mapPoint");
-                if (mapController == null) return;
-
-                try {
-                  // 1. Query the exact Point, not a Rect.
-                  // This avoids Flutter Device Pixel Ratio offset bugs.
-                  final features = await mapController!.queryRenderedFeatures(
-                    screenPoint,            // Pass the point directly
-                    ['building-tap-layer'], // Only look for your red hitboxes
-                    null,
-                  );
-
-                  if (features.isNotEmpty) {
-                    final String? tappedBuilding = features.first['properties']?['name'];
-
-                    if (tappedBuilding != null) {
-                      debugPrint("SUCCESS! Hit building: $tappedBuilding");
-                      _handleLocationSelection(tappedBuilding);
-                      return;
-                    }
-                  }
-
-                  debugPrint("Missed the Red Box. Map Point: ${mapPoint.latitude}, ${mapPoint.longitude}");
-                  debugPrint("features size: ${features.length}");
-                } catch (e) {
-                  debugPrint("Query error: $e");
-                }
-              },*/
               rotateGesturesEnabled: true,
               tiltGesturesEnabled: true,
             ),
@@ -1227,7 +1183,6 @@ class _MapViewState extends State<MapView> {
             left: 10,
             right: 10,
             child: CampusSearchBar(
-
                 onSelected: (selectedLocation) {
                   _handleLocationSelection(selectedLocation);
                 },
@@ -1299,11 +1254,22 @@ class _MapViewState extends State<MapView> {
                               ),
                             ),
                           ),
-
-                          // Destination Name
-                          Text(
-                            _selectedDestinationName!,
-                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _selectedDestinationName!,
+                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: _clearDestination,
+                                tooltip: 'Close',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
                           ),
                           if (buildingData[_selectedDestinationName] != null)
                             Text(
