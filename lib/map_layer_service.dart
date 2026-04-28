@@ -27,20 +27,44 @@ class MapLayerService {
     // Defensively remove in case of a hot-reload partial state.
     try {
       await controller.removeLayer('3d-buildings');
-    } catch (_) {}
+    } catch (e) { debugPrint('Error removing 3D buildings layer: $e'); }
+    try {
+      await controller.removeSource('campus-buildings-source');
+    } catch (e) { debugPrint('Error removing buildings source: $e'); }
 
     try {
+      // Load and merge the three building files into one FeatureCollection.
+      final String campusJson = await rootBundle.loadString('assets/esu_jsons/campusbuildings.geojson');
+      final String dormsJson = await rootBundle.loadString('assets/esu_jsons/dorms.geojson');
+      final String apartmentsJson = await rootBundle.loadString('assets/esu_jsons/apartments.geojson');
+
+      final List<dynamic> mergedFeatures = [
+        ...(json.decode(campusJson)['features'] as List),
+        ...(json.decode(dormsJson)['features'] as List),
+        ...(json.decode(apartmentsJson)['features'] as List),
+      ];
+
+      final Map<String, dynamic> mergedData = {
+        'type': 'FeatureCollection',
+        'features': mergedFeatures,
+      };
+
+      await controller.addSource(
+        'campus-buildings-source',
+        GeojsonSourceProperties(data: mergedData),
+      );
+
       await controller.addLayer(
-        'openmaptiles',
+        'campus-buildings-source',
         '3d-buildings',
         FillExtrusionLayerProperties(
           fillExtrusionColor: '#F0EBE1',
-          fillExtrusionHeight: ['*', ['get', 'render_height'], 1.5],
-          fillExtrusionBase: ['get', 'render_min_height'],
+          fillExtrusionHeight: 10,
+          fillExtrusionBase: 0,
           fillExtrusionOpacity: 0.9,
           fillExtrusionVerticalGradient: true,
         ),
-        sourceLayer: 'building',
+        belowLayerId: 'building-labels-display-layer',
       );
       debugPrint('3D buildings layer added successfully');
     } catch (e) {
@@ -161,10 +185,7 @@ class MapLayerService {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Static label data — moved out of the widget. Keeping it private to the
-  // service since nothing else in the app needs it.
-  // ---------------------------------------------------------------------------
+  // Static label data
   static const Map<String, dynamic> _buildingLabelsData = {
     'type': 'FeatureCollection',
     'features': [
