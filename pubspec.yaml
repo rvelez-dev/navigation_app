@@ -68,7 +68,8 @@ flutter:
     - assets/esu_jsons/
     - assets/images/
     - assets/images/building_photos/Abeloff/
-    - assets/images/building_photos/Admissions/
+    - assets/images/building_photos/Starbucks/
+    - assets/images/building_photos/Tours/
     - assets/images/building_photos/AlumniCenter/
     - assets/images/building_photos/Beers/
     - assets/images/building_photos/Dansbury/

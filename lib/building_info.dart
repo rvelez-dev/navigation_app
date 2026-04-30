@@ -16,6 +16,7 @@ class BuildingInfo {
   List<String> _imagePaths;
   ll2.LatLng _location;
   List<String>? _tags;
+  List<String>? _altLocations;
 
   // Constructor
   BuildingInfo({
@@ -25,15 +26,16 @@ class BuildingInfo {
     required List<String> facilities,
     required List<String> imagePaths,
     required ll2.LatLng location,
-    List<String>? poi,
-    List<String>? tags
+    List<String>? tags,
+    List<String>? altLocations
   })  : _name = name,
         _description = description,
         _hours = hours,
         _facilities = facilities,
         _imagePaths = imagePaths,
         _location = location,
-        _tags = tags;
+        _tags = tags,
+        _altLocations = altLocations;
 
 
   // Getters
@@ -50,6 +52,8 @@ class BuildingInfo {
   List<String>? get tags => _tags;
 
   ll2.LatLng get location => _location;
+
+  List<String>? get altLocations => _altLocations;
 
   // Method to check if the building is open
 

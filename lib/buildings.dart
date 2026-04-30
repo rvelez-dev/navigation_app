@@ -109,7 +109,8 @@ Map<String, BuildingInfo> buildingData = {
     imagePaths: ['assets/images/building_photos/Hemlock/Hemlock_Front.jpg',
       'assets/images/building_photos/Hemlock/Hemlock_Quad.jpg'],
     location: ll2.LatLng(40.99799,-75.17100),
-      tags: ['residence_hall']
+      tags: ['residence_hall'],
+      altLocations : ['University Police', 'Residential Life & Housing Office']
   ),
 
   'Lenape Residence Hall': BuildingInfo(
@@ -129,7 +130,8 @@ Map<String, BuildingInfo> buildingData = {
     facilities: ['Suite-Style Rooms', 'RecB Fitness Center', 'Laundry', 'Geothermal Heating & Cooling'],
     imagePaths: ['assets/images/building_photos/Hawthorn/Hawthorn-Inner.jpg'],
     location: ll2.LatLng(40.99908,-75.17233),
-      tags: ['residence_hall']
+      tags: ['residence_hall'],
+      altLocations: ['Rec B Fitness Center']
   ),
 
   'Sycamore Suites': BuildingInfo(
@@ -139,7 +141,8 @@ Map<String, BuildingInfo> buildingData = {
     facilities: ['Suite-Style Rooms', 'Laundry', 'Geothermal Heating & Cooling'],
     imagePaths: ['assets/images/building_photos/Sycamore/Sycamore_Quad.jpg'],
     location: ll2.LatLng(40.99721,-75.17246),
-    tags: ['residence_hall']
+    tags: ['residence_hall'],
+    altLocations : ['OASIS / CAPS / Health & Wellness', 'Campus Tours Office', 'Student Conduct Office']
   ),
 
   // --- DINING ---
@@ -158,7 +161,8 @@ Map<String, BuildingInfo> buildingData = {
     ],
     facilities: ['All-You-Care-to-Eat Dining', 'Grill', 'Global Kitchen', 'Allergen-Free Station', 'Bakery', 'Ice Cream', 'P.O.D. Mini Market'],
     imagePaths: ['assets/images/building_photos/Dansbury/Dansbury-Interior.jpg'], //TODO take outdoor photo
-    location: ll2.LatLng(40.99671,-75.17351)
+    location: ll2.LatLng(40.99671,-75.17351),
+    altLocations: ['Starbucks (Dansbury)']
   ),
 
   // --- ACADEMIC BUILDINGS ---
@@ -292,6 +296,15 @@ Map<String, BuildingInfo> buildingData = {
     location: ll2.LatLng(40.99546,-75.17034)
   ),
 
+  'Rec B Fitness Center' : BuildingInfo(
+    name: 'Rec B Fitness Center',
+    description: 'A secondary fitness center located in the lower level of Hawthorn Suites. Open to all ESU students as a complement to the main Mattioli Recreation Center.',
+    hours: _weeklyHours(weekdayOpen: 6, weekdayClose: 23, weekendOpen: 11, weekendClose: 21), // TODO: verify hours
+    facilities: ['Cardio Equipment', 'Weight Equipment'],
+    imagePaths: ['assets/images/building_photos/RecB/RecB-Entrance.jpg'],
+    location: ll2.LatLng(40.99904860211119, -75.1729164911327),
+    altLocations: ['Hawthorn Suites']
+  ),
   // --- ACADEMIC / LECTURE ---
 
   'Joseph H. & Mildred E. Beers Lecture Hall': BuildingInfo(
@@ -308,9 +321,9 @@ Map<String, BuildingInfo> buildingData = {
 
   'Reibman Administration Building': BuildingInfo(
     name: 'Reibman Administration Building',
-    description: 'ESU\'s main administration building and the first building visitors see upon arriving on Normal Street. Houses the Office of Admissions and other administrative offices.',
+    description: 'ESU\'s main administration building and the first building visitors see upon arriving on Normal Street. Houses the Office of Tours and other administrative offices.',
     hours: _weeklyHours(weekdayOpen: 7, weekdayClose: 18, weekendOpen: 0, weekendClose: 0), // 7am - 6pm weekdays, closed weekends (admin M-F)
-    facilities: ['Office of Admissions', 'Administrative Offices'],
+    facilities: ['Office of Tours', 'Administrative Offices'],
     imagePaths: ['assets/images/building_photos/Reibman/Reibman-Front.jpg'],
     location: ll2.LatLng(40.99564,-75.17683)
   ),
@@ -368,5 +381,74 @@ Map<String, BuildingInfo> buildingData = {
     facilities: ['Meeting Rooms', 'Event Space', 'Alumni Relations Office'],
     imagePaths: ['assets/images/building_photos/AlumniCenter/AlumniCenter-Front.jpg'],
     location: ll2.LatLng(40.9996531,-75.1713405)
+  ),
+
+  // --- Secondary Locations ---
+  'University Police': BuildingInfo(
+      name: 'University Police',
+      description: 'The Office of University Police and Campus Information Center, located on the ground floor of Hemlock Suites at 161 Smith Street, Suite 100. Provides 24/7 emergency response and campus safety services.',
+      hours: _weeklyHours(weekdayOpen: 0, weekdayClose: 0, weekendOpen: 0, weekendClose: 0), // 24/7
+      facilities: ['Emergency Response', 'Campus Information', 'Safety Escorts'],
+      imagePaths: ['assets/images/building_photos/PoliceStation/20260414_131040.jpg'],
+      location: ll2.LatLng(40.9983417802708, -75.17103241397469),
+      altLocations: ['Hemlock Suites', 'Residential Life & Housing Office']
+  ),
+
+  'Residential Life & Housing Office': BuildingInfo(
+      name: 'Residential Life & Housing Office',
+      description: 'The central office for Residential Life & Housing, located in the South Wing of Hemlock Suites. Handles housing assignments, residence hall operations, and student housing services.',
+      hours: [
+        OperationHours(TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 16, minute: 30)), // Monday: 8am - 4:30pm
+        OperationHours(TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 16, minute: 30)), // Tuesday
+        OperationHours(TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 16, minute: 30)), // Wednesday
+        OperationHours(TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 16, minute: 30)), // Thursday
+        OperationHours(TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 16, minute: 30)), // Friday
+        _closed, // Saturday
+        _closed, // Sunday
+      ],
+      facilities: ['Housing Assignments', 'Residence Hall Administration'],
+      imagePaths: ['assets/images/building_photos/ResLife/20260414_130541.jpg'],
+      location: ll2.LatLng(40.99738426202472, -75.17143492872447),
+      altLocations: ['Hemlock Suites', 'University Police']
+  ),
+
+  'OASIS / CAPS / Health & Wellness': BuildingInfo(
+      name: 'OASIS / CAPS / Health & Wellness',
+      description: 'Combined student support services in Sycamore Suites: OASIS (disability services), CAPS (Counseling & Psychological Services), and the Health & Wellness Center. Entrances inside Sycamore are interconnected.',
+      hours: _weeklyHours(weekdayOpen: 8, weekdayClose: 17, weekendOpen: 0, weekendClose: 0), // TODO: verify hours
+      facilities: ['Disability Services (OASIS)', 'Counseling Services (CAPS)', 'Health & Wellness Clinic'],
+      imagePaths: ['assets/images/building_photos/OASIS_and_Caps/OASIS-Main.jpg','assets/images/building_photos/OASIS_and_Caps/OASIS-Side.jpg'],
+      location: ll2.LatLng(40.9976106454663, -75.17298921306364),
+      altLocations: ['Sycamore Suites', 'Student Conduct Office', 'Campus Tours Office']
+  ),
+
+  'Student Conduct Office': BuildingInfo(
+      name: 'Student Conduct Office',
+      description: 'The Office of Student Conduct & Community Standards, located in Sycamore Suites. Handles student conduct matters and community standards enforcement.',
+      hours: _weeklyHours(weekdayOpen: 8, weekdayClose: 17, weekendOpen: 0, weekendClose: 0), // TODO: verify hours
+      facilities: ['Student Conduct Administration'],
+      imagePaths: ['assets/images/building_photos/StudentConduct/Conduct-Front.jpg'],
+      location: ll2.LatLng(40.99795903923964, -75.1723873661306),
+      altLocations: ['Sycamore Suites', 'Campus Tours Office', 'OASIS / CAPS / Health & Wellness']
+  ),
+
+  'Campus Tours Office': BuildingInfo(
+      name: 'Campus Tours Office',
+      description: 'Campus tour operations office located in Sycamore Suites. Handles scheduling and check-in for prospective student tours.',
+      hours: _weeklyHours(weekdayOpen: 9, weekdayClose: 17, weekendOpen: 0, weekendClose: 0), // TODO: verify hours
+      facilities: ['Tour Check-In', 'Visitor Services'],
+      imagePaths: ['assets/images/building_photos/Tours/Tours_Entry.jpg'],
+      location: ll2.LatLng(40.99738132197767, -75.17284897688508),
+      altLocations: ['Sycamore Suites', 'Student Conduct Office', 'OASIS / CAPS / Health & Wellness']
+  ),
+
+  'Starbucks (Dansbury)': BuildingInfo(
+      name: 'Starbucks (Dansbury)',
+      description: 'Starbucks coffee shop located inside Dansbury Commons. Offers the standard Starbucks menu including coffee, espresso drinks, teas, and pastries.',
+      hours: _weeklyHours(weekdayOpen: 7, weekdayClose: 19, weekendOpen: 9, weekendClose: 17), // TODO: verify hours
+      facilities: ['Coffee', 'Espresso Drinks', 'Tea', 'Pastries'],
+      imagePaths: ['assets/images/building_photos/Starbucks/Starbucks_Front.jpg'],
+      location: ll2.LatLng(40.99677877235257, -75.17398456141346), // nudged east of Dansbury
+      altLocations: ['Dansbury Commons']
   ),
 };

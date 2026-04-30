@@ -1,59 +1,21 @@
-
+import 'buildings.dart';
 import 'package:flutter/material.dart';
 
 
 class MySearchDelegate extends SearchDelegate {
   //callback function that sends the selected location back to map_view
-final Function(String) onLocationSelected;
+  final Function(String) onLocationSelected;
 
-//constructor that requires the callback to be passed in
-MySearchDelegate({required this.onLocationSelected});
+  //using buildings so updates reflect in dropdown immediately also
+  List<String> get allCampusLocations => buildingData.keys.toList();
 
-
-@override
-//supposed to remove side tool bar but i had to change it in settings -- get back to this
-TextInputAction get textInputAction => TextInputAction.search;
+  //constructor that requires the callback to be passed in
+  MySearchDelegate({required this.onLocationSelected});
 
 
-
-  //creating list to hold all searchable locations
-  final List<String>allCampusLocations= [
-    //residence halls
-    'Laurel Residence Hall',
-    'Shawnee Residence Hall',
-    'Minsi Residence Hall',
-    'Linden Residence Hall',
-    'Hemlock Suites',
-    'Lenape Residence Hall',
-    'Hawthorn Suites',
-    'Sycamore Suites',
-    //campus buildings
-    'Mattioli Recreation Center',
-    'Joseph H. & Mildred E. Beers Lecture Hall',
-    'Reibman Administration Building',
-    'Conference Services & Multicultural House',
-    'Abeloff Center for the Performing Arts',
-    'Rosenkrans Hall',
-    'University Center',
-    'Henry A. Ahnert Jr. Alumni Center',
-    //academic buildings
-    'Monroe Hall',
-    'Koehler Fieldhouse and Natatorium',
-    'Kemp Library',
-    'Warren E. & Sandra Hoeffner Science and Technology Center',
-    'Moore Biology Hall',
-    'Gessner Science Hall',
-    'Stroud Hall',
-    'DeNike Center for Human Services',
-    'Fine and Performing Arts Center',
-    'Zimbar-Liljenstein Hall',
-    //food
-    'Dansbury Commons',
-    //outdoor places
-    'Eiler-Martin Stadium',
-    'Dave Carllyon Pavilion',
-  ];
-
+  @override
+  //supposed to remove side tool bar but i had to change it in settings -- get back to this
+  TextInputAction get textInputAction => TextInputAction.search;
 
   @override
   //this widget builds the (X) button on the right side of the search bar to clear

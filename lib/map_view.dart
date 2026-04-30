@@ -22,22 +22,17 @@ class MapView extends StatefulWidget {
 }
 
 class _MapViewState extends State<MapView> {
-  // -------------------------------------------------------------------------
   // Services — pure-logic helpers the widget delegates to.
-  // -------------------------------------------------------------------------
   final RoutingService _routingService = RoutingService();
   final BuildingHitTester _hitTester = BuildingHitTester();
   final MapLayerService _layerService = MapLayerService();
 
-  // -------------------------------------------------------------------------
   // Map controller and routing/navigation state.
-  // -------------------------------------------------------------------------
   MapLibreMapController? mapController;
 
   ll2.LatLng? _startPoint;
   ll2.LatLng? _endPoint;
   List<ll2.LatLng> _routePolyline = [];
-  bool _isGraphLoaded = false;
 
   String _walkingTimeEstimate = '';
 
@@ -105,11 +100,6 @@ class _MapViewState extends State<MapView> {
           .loadString('assets/esu_jsons/walkways.geojson');
       _routingService.loadGeoJson(geoJsonData);
 
-      if (mounted) {
-        setState(() {
-          _isGraphLoaded = true;
-        });
-      }
       debugPrint('graph loaded successfully');
     } catch (e) {
       debugPrint('Error loading GeoJSON: $e');
@@ -272,9 +262,7 @@ class _MapViewState extends State<MapView> {
     );
   }
 
-  // -------------------------------------------------------------------------
   // Routing — draws the path on the map and updates state.
-  // -------------------------------------------------------------------------
   void _makePath(ll2.LatLng start, ll2.LatLng end) {
     debugPrint('Calling routing service');
     final path = _routingService.getRoute(start, end);
@@ -539,6 +527,7 @@ class _MapViewState extends State<MapView> {
       _endPoint = endpoint;
       _isRouting = false;
       _routePolyline = [];
+      _walkingTimeEstimate = '';
     });
     _stopRerouteTimer();
 
@@ -590,9 +579,7 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  // -------------------------------------------------------------------------
   // Style-loaded callback — delegates layer setup to MapLayerService.
-  // -------------------------------------------------------------------------
   void _onStyleLoaded() async {
     if (mapController == null) return;
 
@@ -628,9 +615,7 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  // -------------------------------------------------------------------------
   // UI building helpers.
-  // -------------------------------------------------------------------------
   Widget _buildAboutSection() {
     if (_selectedDestinationName == null) return const SizedBox.shrink();
 
@@ -676,6 +661,63 @@ class _MapViewState extends State<MapView> {
               );
             },
           ),
+        ),
+      ],
+    );
+  }
+
+  // Renders the "Related locations" section for buildings that have linked
+  // alt locations (e.g. Hawthorn ↔ RecB Fitness Center). Returns an empty
+  // widget when there are no links, so it's safe to call unconditionally.
+  Widget _buildRelatedLocationsSection() {
+    if (_selectedDestinationName == null) return const SizedBox.shrink();
+
+    final BuildingInfo? info = buildingData[_selectedDestinationName];
+    final List<String>? alts = info?.altLocations;
+    if (alts == null || alts.isEmpty) return const SizedBox.shrink();
+
+    // Filter out any links that point to non-existent entries so a stale
+    // reference can't crash the UI. The debug verifier catches these at boot.
+    final List<String> validAlts =
+    alts.where((name) => buildingData.containsKey(name)).toList();
+    if (validAlts.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 30),
+        const Text(
+          'Related Locations',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
+            shadows: [
+              Shadow(
+                color: Colors.black,
+                offset: Offset(0, 0),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+        ),
+        const Divider(),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: validAlts.map((altName) {
+            return OutlinedButton.icon(
+              onPressed: () => _handleLocationSelection(altName),
+              icon: const Icon(Icons.place_outlined, size: 18),
+              label: Text(altName),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.blue,
+                side: const BorderSide(color: Colors.blue),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
@@ -934,6 +976,7 @@ class _MapViewState extends State<MapView> {
                           ),
                           const Divider(),
                           _buildAboutSection(),
+                          _buildRelatedLocationsSection(),
                         ],
                       ),
                     ),
