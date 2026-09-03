@@ -37,7 +37,7 @@ class RoutingService {
       //processing each segment of the walkway
       for (int i = 0; i < coords.length - 1; i++) {
         //GeoJSOn stores coordinates as [Long,Lat]
-        // SWAP: GeoJSON is [Lon, Lat], LatLng is (Lat, Lon)
+        // GeoJSON is [Lon, Lat], LatLng is (Lat, Lon)
         LatLng p1 = LatLng(coords[i][1].toDouble(), coords[i][0].toDouble());
         LatLng p2 = LatLng(coords[i+1][1].toDouble(), coords[i+1][0].toDouble());
 
@@ -124,7 +124,7 @@ class RoutingService {
     //displaying cache miss debug print
     debugPrint("Cache miss - calculating new route ");
 
-    // 1. Snap user clicks to the nearest walkway point
+    // Snap user clicks to the nearest walkway point
     LatLng snappedStart = _snapToGraph(start);
     LatLng snappedEnd = _snapToGraph(end);
 
@@ -135,14 +135,14 @@ class RoutingService {
     }
 
     try {
-      // 2. Run Dijkstra
+      // Run Dijkstra
       List dynamicPath = Dijkstra.findPathFromGraph(
           graph,
           "${snappedStart.latitude},${snappedStart.longitude}",
           "${snappedEnd.latitude},${snappedEnd.longitude}"
       );
 
-      // 3. Convert String IDs back to LatLng objects for the map
+      // Convert String IDs back to LatLng objects for the map
         final route = dynamicPath.map((s) {
         var parts = s.split(',');
         return LatLng(double.parse(parts[0]), double.parse(parts[1]));
@@ -163,7 +163,7 @@ class RoutingService {
       return [];
     }
   }
-  //WHEN TO CALL THIS:
+
   //After reloading GeoJSON data
   //When testing to verify cache is working
   //If routes seem wrong (stale cached data)
